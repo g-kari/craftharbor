@@ -117,7 +117,7 @@ partial class CraftHarbor
     }
     void SelectHarborPage()
     {
-        if(pageHeading==null)return;pageHeading.Text=PageNames[workspace.SelectedIndex];dashboardTitle.Text=workspace.SelectedIndex==0?profile.Name:PageNames[workspace.SelectedIndex];
+        if(pageHeading==null||workspace.SelectedIndex<0)return;pageHeading.Text=PageNames[workspace.SelectedIndex];dashboardTitle.Text=workspace.SelectedIndex==0?profile.Name:PageNames[workspace.SelectedIndex];
         tips.SetToolTip(dashboardTitle,profile.Name);for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==workspace.SelectedIndex;navigation[i].AccessibleDescription=(navigation[i].Selected?"現在の画面。":"画面へ移動。")+"Alt+"+(i+1);navigation[i].Invalidate();}if(workspace.SelectedIndex==7)RefreshGuide();ArrangeHarbor();
     }
     void RefreshRecentLogs()
