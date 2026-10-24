@@ -6,6 +6,11 @@ using System.Windows.Forms;
 
 partial class CraftHarbor
 {
+    void ObserveKeyboardReview(Control container)
+    {
+        if(ManagerDataOverride==null||Array.IndexOf(Environment.GetCommandLineArgs(),"--keyboard-review")<0)return;
+        foreach(var control in new[]{container}.Concat(Descendants(container))){var observed=control;observed.GotFocus+=delegate{File.AppendAllText(Path.Combine(root,"keyboard-focus.txt"),DateTime.UtcNow.ToString("o")+" | "+observed.GetType().Name+" | "+observed.AccessibleName+Environment.NewLine);};}
+    }
     void CheckReviewScreens()
     {
         foreach(var c in Descendants(this).Where(c=>c is TextBox||c is Button||c is Label||c is ComboBox||c is CheckBox))Require(c.Font.SizeInPoints>=12,"UI text is at least 12pt before enlargement");

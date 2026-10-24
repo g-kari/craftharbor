@@ -140,14 +140,14 @@ partial class CraftHarbor
         memory.AccessibleName="サーバーの手動メモリ上限 GiB";address.AccessibleName="友達向けの公開接続先";command.AccessibleName="サーバーコンソールのコマンド入力";player.AccessibleName="参加を許可するJava版ユーザー名";log.AccessibleName="サーバーとplayit.ggのコンソールログ";
         connect.AccessibleName="playit.ggの接続を開始";disconnect.AccessibleName="playit.ggの接続を停止";
         usersGrid.AccessibleName="参加者と権限一覧";modsGrid.AccessibleName="サーバーMOD一覧";backupsGrid.AccessibleName="復元可能な完全バックアップ一覧";motdSetting.AccessibleName="サーバー紹介文";difficultySetting.AccessibleName="ゲームの難易度";modeSetting.AccessibleName="標準のゲームモード";maxPlayersSetting.AccessibleName="最大参加人数";viewSetting.AccessibleName="描画距離 チャンク数";simulationSetting.AccessibleName="シミュレーション距離 チャンク数";backupHours.AccessibleName="ワールド自動バックアップの時間間隔";backupKeep.AccessibleName="自動バックアップの保持数";restartTime.AccessibleName="毎日のサーバー再起動時刻";broadcastText.AccessibleName="全参加者へのお知らせ文";searchText.AccessibleName="コンソールログの検索語";
-        CaptureStyle(this);workspace.Resize+=delegate{ResizeProfileInputs();};ResizeProfileInputs();RefreshGuide();RefreshExperience();
+        ObserveKeyboardReview(this);CaptureStyle(this);workspace.Resize+=delegate{ResizeProfileInputs();};ResizeProfileInputs();RefreshGuide();RefreshExperience();
         oldHeading.Dispose();oldTools.Dispose();old.Dispose();
     }
     void StyleControls(Control rootControl)
     {
         foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,40);a.Height=40;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.Font=new Font("Yu Gothic UI",12);}
             if(c is TextBox){c.AccessibleRole=AccessibleRole.Text;c.AccessibleName=c.AccessibleName??"入力欄";}
-            if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=32;grid.ColumnHeadersHeight=36;grid.GridColor=Color.FromArgb(55,68,84);grid.AccessibleName="一覧表";}
+            if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=32;grid.ColumnHeadersHeight=36;grid.GridColor=Color.FromArgb(55,68,84);if(string.IsNullOrWhiteSpace(grid.AccessibleName))grid.AccessibleName="一覧表";}
             if(c is TextBox||c is NumericUpDown||c is ComboBox)InputFrame.Wrap(c);else StyleControls(c);}
     }
     string IconFor(string s){if(s.Contains("停止")||s.Contains("BAN"))return "stop";if(s.Contains("起動"))return "play";if(s.Contains("再起動")||s.Contains("更新")||s.Contains("取得"))return "refresh";if(s.Contains("コピー"))return "copy";if(s.Contains("バックアップ")||s.Contains("復元")||s.Contains("保存"))return "backup";if(s.Contains("設定"))return "settings";if(s.Contains("許可")||s.Contains("OP")||s.Contains("キック"))return "users";if(s.Contains("案内")||s.Contains("導入"))return "guide";if(s.Contains("接続")||s.Contains("連携"))return "link";if(s.Contains("フォルダー")||s.Contains("開く"))return "folder";return "console";}
@@ -163,7 +163,7 @@ partial class CraftHarbor
         bool contrast=highContrast!=null&&highContrast.Checked;float factor=largeText!=null&&largeText.Checked?1.16f:1;
         var controls=new[]{(Control)dialog}.Concat(Descendants(dialog)).ToArray();var fonts=controls.ToDictionary(c=>c,c=>c.Font);
         foreach(var c in controls){var font=fonts[c];c.Font=new Font(font.FontFamily,Math.Max(12,font.SizeInPoints)*factor,font.Style);if(contrast){c.BackColor=Color.Black;c.ForeColor=Color.White;var link=c as LinkLabel;if(link!=null)link.LinkColor=link.ActiveLinkColor=link.VisitedLinkColor=Color.White;var grid=c as DataGridView;if(grid!=null){grid.BackgroundColor=Color.Black;grid.DefaultCellStyle.BackColor=grid.ColumnHeadersDefaultCellStyle.BackColor=Color.Black;grid.DefaultCellStyle.ForeColor=grid.ColumnHeadersDefaultCellStyle.ForeColor=Color.White;grid.DefaultCellStyle.SelectionBackColor=Color.White;grid.DefaultCellStyle.SelectionForeColor=Color.Black;}}}
-        var area=Screen.FromControl(this).WorkingArea;dialog.Size=new Size(Math.Min(dialog.Width,area.Width),Math.Min(dialog.Height,area.Height));
+        ObserveKeyboardReview(dialog);var area=Screen.FromControl(this).WorkingArea;dialog.Size=new Size(Math.Min(dialog.Width,area.Width),Math.Min(dialog.Height,area.Height));
     }
     void RefreshExperience()
     {

@@ -4,6 +4,23 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
+class HarborDialog:Form
+{
+    static bool HasOpenChoice(Control container)
+    {
+        foreach(Control child in container.Controls){var choice=child as ComboBox;if(choice!=null&&choice.DroppedDown||HasOpenChoice(child))return true;}return false;
+    }
+    bool HandleEscape(Keys keyData)
+    {
+        // Import dialogs have their own cancel button, which also cancels active downloads.
+        // An open choice keeps its native Escape handling instead of closing the whole form.
+        if(keyData!=Keys.Escape||CancelButton!=null||HasOpenChoice(this))return false;
+        Close();return true;
+    }
+    protected override bool ProcessCmdKey(ref Message message,Keys keyData){return HandleEscape(keyData)||base.ProcessCmdKey(ref message,keyData);}
+    protected override bool ProcessDialogKey(Keys keyData){return HandleEscape(keyData)||base.ProcessDialogKey(keyData);}
+}
+
 class InputFrame:Panel
 {
     readonly Control input;

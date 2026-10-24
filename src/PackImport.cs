@@ -82,7 +82,7 @@ partial class CraftHarbor
     }
     static string ShowPackImport(IWin32Window owner,string baseDirectory,string java,bool snapshot=false)
     {
-        string result=null;using(var dialog=new Form{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="URLからサーバーパックを追加",Size=new Size(900,760),MinimumSize=new Size(780,700),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",10)}){
+        string result=null;using(var dialog=new HarborDialog{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="URLからサーバーパックを追加",Size=new Size(900,760),MinimumSize=new Size(780,700),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",10)}){
             var form=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(24),AutoScroll=true};dialog.Controls.Add(form);
             form.Controls.Add(new Label{Text="新しいサーバーを、配布URLから。",AutoSize=true,Font=new Font("Yu Gothic UI",20,FontStyle.Bold)});
             form.Controls.Add(new Label{Text="直接ダウンロードできるサーバー用ZIPに対応。展開だけを行い、起動スクリプトは実行しません。",AutoSize=true,ForeColor=Muted,MaximumSize=new Size(800,0),Margin=new Padding(0,8,0,18)});

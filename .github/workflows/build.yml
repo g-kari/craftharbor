@@ -55,8 +55,8 @@ jobs:
         with:
           name: unsigned-windows-x64
           path: |
-            dist/CraftHarbor-0.3.0-preview-windows-x64.zip
-            dist/CraftHarbor-0.3.0-preview-windows-x64.zip.sha256
+            dist/CraftHarbor-0.3.1-preview-windows-x64.zip
+            dist/CraftHarbor-0.3.1-preview-windows-x64.zip.sha256
             dist/core-check-report.txt
             dist/java-verification.txt
             dist/setup.exe

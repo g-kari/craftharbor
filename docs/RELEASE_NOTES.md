@@ -1,3 +1,9 @@
+# 0.3.1-preview
+
+Keyboard accessibility patch for the 0.3 preview. Server-list and publishing dialogs now close with Escape. Import dialogs retain their existing cancel button behavior, including cancellation while a download is in progress. Read-only tables use Tab to move to the next control while arrow keys remain available for row selection. Styling preserves explicit accessible names on data grids instead of replacing them with a generic table name.
+
+The 0.3 features and operating constraints below remain unchanged. Updating from the legacy manager to the persistent host still requires one save-and-stop; no running server is migrated automatically.
+
 # 0.3.0-preview
 
 General-purpose, multi-server preview of CraftHarbor.

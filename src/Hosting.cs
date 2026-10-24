@@ -65,7 +65,7 @@ partial class CraftHarbor
     }
     void HostingSettings(bool snapshot=false)
     {
-        using(var dialog=new Form{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="公開方法・音声チャット",Size=new Size(980,830),MinimumSize=new Size(860,700),BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",12),StartPosition=FormStartPosition.CenterParent}){
+        using(var dialog=new HarborDialog{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="公開方法・音声チャット",Size=new Size(980,830),MinimumSize=new Size(860,700),BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",12),StartPosition=FormStartPosition.CenterParent}){
             var form=new FlowLayoutPanel{Dock=DockStyle.Fill,AutoScroll=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(24)};dialog.Controls.Add(form);form.Controls.Add(new Label{Text="このサーバーの公開方法",Font=new Font("Yu Gothic UI",20,FontStyle.Bold),AutoSize=true});
             var provider=ChoiceSetting(form,"接続方法",new[]{"playit.gg","ngrok","直接公開（ポート転送）","外部ポート開放ツール"});provider.Width=570;provider.SelectedIndex=hosting.Provider=="ngrok"?1:hosting.Provider=="direct"?2:hosting.Provider=="port-tool"?3:0;
             var explanation=new Label{AutoSize=true,MaximumSize=new Size(880,0),ForeColor=Muted,Margin=new Padding(0,12,0,18)};form.Controls.Add(explanation);Action describe=delegate{explanation.Text=provider.SelectedIndex==0?"ルーターでのポート開放は不要です。公式エージェントとアカウント連携・公開トンネルが必要です。接続先は自動取得します。":provider.SelectedIndex==1?"公式ngrokエージェントのTCP接続を開始します。アカウント認証はngrok側で設定してください。無料TCPの利用にはカード確認が必要です。UDP音声は別の公開方法が必要です。":"ルーターのポート転送と、外部から接続できるネットワークが必要です。サーバーの待受を外部向けに変更する場合は下のチェックを選んで保存してください。";};provider.SelectedIndexChanged+=delegate{describe();};describe();

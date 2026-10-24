@@ -18,6 +18,7 @@ servers.json
 memory-reservations.json
 manager-settings.txt
 manager-log-filter.txt
+keyboard-focus.txt
 java-path.txt
 verification*.txt
 verification*.log

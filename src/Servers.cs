@@ -54,7 +54,7 @@ partial class CraftHarbor
     }
     void OpenServersDialog(bool snapshot=false)
     {
-        using(var dialog=new Form{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="登録サーバー",Size=new Size(1060,580),MinimumSize=new Size(940,500),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",10)}){
+        using(var dialog=new HarborDialog{Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath),Text="登録サーバー",Size=new Size(1060,580),MinimumSize=new Size(940,500),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=new Font("Yu Gothic UI",10)}){
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(20)};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));dialog.Controls.Add(layout);
             layout.Controls.Add(new Label{Text="保存先ごとに別のサーバーを登録できます。別ウィンドウで開けば同時起動できます。\n自動メモリは登録数に応じて配分します。登録を増やした後は、既存サーバーも再起動すると再配分されます。",Dock=DockStyle.Fill,ForeColor=Muted},0,0);
             var grid=Grid();grid.AccessibleName="登録したサーバー一覧";grid.Columns.Add("name","サーバー名");grid.Columns.Add("path","保存先");grid.Columns.Add("port","ポート");grid.Columns.Add("state","状態");layout.Controls.Add(grid,0,1);
