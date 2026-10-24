@@ -18,7 +18,7 @@ partial class CraftHarbor
     static bool InitializeWorkspace(string[] args)
     {
         try{
-            MigrateLegacySettings();
+            if(Array.IndexOf(args,"--experience-check")<0)MigrateLegacySettings();
             for(int i=0;i<args.Length-1;i++)if(args[i]=="--workspace"){
                 string path=Path.GetFullPath(args[i+1]);if(!ValidWorkspace(path))throw new Exception("ワークスペースには server/server.properties と導入済みのJavaサーバーが必要です。");WorkspaceRoot=path;return true;
             }

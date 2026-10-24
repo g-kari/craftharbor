@@ -15,6 +15,8 @@ This preview adds per-workspace server profiles, configurable Minecraft/pack met
 The GitHub Actions build runs offline checks for memory policy, webhook URL validation, mention suppression, DPAPI encryption and archive path traversal rejection.
 These checks are not an end-to-end test of Minecraft, public tunneling, accessibility tools or real Discord delivery.
 
+On the development PC, the renamed manager started an existing Create: Astral server using Java 17, observed the ready state and live TPS/MSPT/process memory, and stopped the server gracefully. Real Discord delivery and an external player's connection have not been tested. UI fixture checks keep their server registry inside the synthetic workspace so they do not register fake servers in the operator's list.
+
 ## Signing status
 
 **Unsigned preview.** Smart App Control may block this application. Code signing has not been approved or provided by SignPath.

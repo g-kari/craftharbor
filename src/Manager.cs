@@ -42,6 +42,7 @@ partial class CraftHarbor : Form
     {
         if(args.Length>0&&args[0]=="--core-check")return CoreChecks();
         if(!InitializeWorkspace(args))return 1;
+        if(Array.IndexOf(args,"--experience-check")>=0)ManagerDataOverride=Path.Combine(WorkspaceRoot,".manager-check-data");
         RegisterWorkspace(WorkspaceRoot);
         bool first;
         using (var mutex = new Mutex(true,WorkspaceMutexName(WorkspaceRoot),out first))

@@ -15,7 +15,8 @@ class MemoryReservation { public string Workspace="";public int Pid;public long 
 
 partial class CraftHarbor
 {
-    static string ManagerData {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor");}}
+    static string ManagerDataOverride;
+    static string ManagerData {get{return ManagerDataOverride??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor");}}
     static string RegistryFile {get{return Path.Combine(ManagerData,"servers.json");}}
     static string ReservationsFile {get{return Path.Combine(ManagerData,"memory-reservations.json");}}
     static string CanonicalWorkspace(string path){string full=Path.GetFullPath(path);return full==Path.GetPathRoot(full)?full:full.TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);}
