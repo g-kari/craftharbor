@@ -37,7 +37,7 @@ partial class CraftHarbor
     }
     void CheckHarborScreens()
     {
-        Require(HarborTheme.Lighthouse!=null&&HarborTheme.Harbor!=null,"promotional artwork embedded");
+        Require(HarborTheme.Lighthouse!=null&&HarborTheme.Harbor!=null&&HarborTheme.IconAtlas!=null,"lighthouse, harbor and generated icon atlas embedded");
         largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();
         foreach(var size in new[]{new Size(1360,960),new Size(1024,720)}){
             SetReviewSize(size);
@@ -59,7 +59,10 @@ partial class CraftHarbor
         }
         hosting.Provider=provider;ready=false;RefreshDashboardPresentation(false,true);
         connectionStatus="合成データ：公開接続だけ実行中";ApplyDiscoveredAddresses();
-        SetReviewSize(new Size(1536,1024));CaptureHarborPage("ui-harbor-independent.png",0);
+        SetReviewSize(new Size(1536,1024));
+        address.Text="example.invalid:25565";diskValue.Text="128.0 GiB";AppendLogRecords(new[]{"[14:22:10] [MC] 合成データ：ワールドを保存しました","[14:22:26] [MC] 合成データ：サーバー停止","[14:22:41] [公開] 合成データ：公開接続を維持しています"});
+        CaptureHarborPage("ui-harbor-independent.png",0);
+        Require(dashboardRows.Height<=workspace.TabPages[0].ClientSize.Height+6,"wide dashboard including graph actions fits without vertical clipping: rows="+dashboardRows.Height+", available="+workspace.TabPages[0].ClientSize.Height);
         Require(player.Parent.Parent==workspace.TabPages[2].Controls[0].Controls.Cast<Control>().First(c=>c.Contains(player)),"whitelist remains in participant layout");
         logRecords.Clear();RebuildLogView();Require(recentLogs.Text.Contains("まだログはありません"),"empty recent logs explained");
         AppendLogRecords(new[]{"[MC] Cloud UI fixture: world saved","[公開] Cloud UI fixture: tunnel remains running","[管理] Cloud UI fixture: no real server is started"});

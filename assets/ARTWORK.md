@@ -1,10 +1,13 @@
 # CraftHarbor artwork
 
-The lighthouse and harbor are original AI-generated assets from the MIT-licensed [CraftHarbor promotional site](https://github.com/g-kari/craftharbor-site), revision `e587c600ec17971682b1a0569aefc178c0a68d98`.
-Copyright (c) 2026 CraftHarbor contributors. The repository's MIT license applies.
+The repository's MIT license applies to the original CraftHarbor artwork. Copyright (c) 2026 CraftHarbor contributors.
 
-- `lighthouse-ui.png`: source `public/assets/lighthouse-128.png`, Git blob `cd30b48cf4f1fe591148e0798a7e592a51024c5b`.
-- `harbor-ui.png`: a 480-pixel-wide copy of `public/assets/harbor.png`, Git blob `d9363f93da1a6c77e5aeffb44b3be3475959abf2`. Only image size changes; artwork is not used as a screenshot background.
-- Wood frames, borders and state markers are drawn by the native shared controls.
+- `lighthouse-ui.png`: original AI-generated promotional-site lighthouse, from [g-kari/craftharbor-site](https://github.com/g-kari/craftharbor-site), revision `e587c600ec17971682b1a0569aefc178c0a68d98`, source `public/assets/lighthouse-128.png`.
+- `harbor-ui.png`: retained 480-pixel-wide promotional-site harbor asset; no longer used in the app's sidebar.
+- `harbor-tall.png`: newly generated transparent lighthouse, cabin, crane and island illustration for the taller sidebar, 2026-10-25. Generated independently; not a screenshot or UI background.
+- `harbor-icons.png`: newly generated transparent 24-icon atlas, 2026-10-25. The native renderer selects alpha-trimmed source rectangles, preserving the original atlas file. Includes server, public connection, dashboard, console, people, settings, backup, clock, mods, guide, community, CPU, RAM, TPS, MSPT, disk, copy, save, link, folder, play, stop, refresh and lighthouse. The community glyph is an original game/chat symbol, not the official Discord trademark.
+- The wordmark, wood grain, beveled frames and state markers are native vector/pixel drawing. No additional font or icon package is required.
 
-The artwork is embedded into both binaries. It contains no controls, text, credentials, game textures or user worlds. Decorative controls are excluded from keyboard navigation and hidden in high-contrast mode.
+The lighthouse, tall harbor and atlas are embedded into both binaries. No controls, text, credentials, game textures or user worlds are baked into artwork. Controls remain native and operable. Decoration is excluded from keyboard navigation. High-contrast mode hides harbor decoration and uses monochrome operation symbols.
+
+`tools/prepare-art.ps1` only reproduces the two original promotional assets. It does not replace the new atlas or tall harbor.

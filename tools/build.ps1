@@ -6,7 +6,8 @@ $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path -LiteralPath $compiler)) { throw '.NET Framework 4.x C# compiler is required.' }
 $sourcePaths = Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src') -Filter '*.cs' | Sort-Object Name | Select-Object -ExpandProperty FullName
 $compilerArgs = @('/nologo','/target:winexe','/platform:x64',('/win32icon:'+(Join-Path $repoRoot 'assets\craftharbor.ico')),('/out:'+(Join-Path $dist 'CraftHarbor.exe')),
- ('/resource:'+(Join-Path $repoRoot 'assets\lighthouse-ui.png')+',CraftHarbor.lighthouse.png'),('/resource:'+(Join-Path $repoRoot 'assets\harbor-ui.png')+',CraftHarbor.harbor.png'),
+ ('/resource:'+(Join-Path $repoRoot 'assets\lighthouse-ui.png')+',CraftHarbor.lighthouse.png'),('/resource:'+(Join-Path $repoRoot 'assets\harbor-tall.png')+',CraftHarbor.harbor.png'),
+ ('/resource:'+(Join-Path $repoRoot 'assets\harbor-icons.png')+',CraftHarbor.icons.png'),
  '/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll','/reference:System.IO.Compression.dll','/reference:System.IO.Compression.FileSystem.dll',
  '/reference:System.Windows.Forms.DataVisualization.dll','/reference:System.Web.Extensions.dll','/reference:System.Security.dll') + $sourcePaths
 & $compiler @compilerArgs

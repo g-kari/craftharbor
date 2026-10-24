@@ -23,7 +23,7 @@ class ActionButton : Button
     public bool Selected,Navigation,Primary;
     bool hover;
     public ActionButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Cursor=Cursors.Hand;}
-    public override Size GetPreferredSize(Size proposedSize){var text=TextRenderer.MeasureText(Text,Font);return new Size(Math.Max(MinimumSize.Width,text.Width+(IconKey.Length>0?52:26)),Math.Max(44,text.Height+18));}
+    public override Size GetPreferredSize(Size proposedSize){var text=TextRenderer.MeasureText(Text,Font);return new Size(Math.Max(MinimumSize.Width,text.Width+(IconKey.Length>0?(Navigation?64:54):28)),Math.Max(Navigation?50:44,text.Height+16));}
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnPaint(PaintEventArgs e)
@@ -35,11 +35,12 @@ class ActionButton : Button
         else if(hover&&Enabled)bg=ControlPaint.Light(bg,.12f);
         e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);
         using(var path=SurfacePaint.Round(new RectangleF(1,1,Width-3,Height-3),3))
-        using(var fill=new SolidBrush(bg))
-        using(var border=new Pen(contrast?Color.White:Selected||Primary?HarborTheme.Live:HarborTheme.Border,Selected?2:1)){e.Graphics.FillPath(fill,path);e.Graphics.DrawPath(border,path);}
-        if(Selected)using(var marker=new SolidBrush(contrast?Color.Black:HarborTheme.Header))e.Graphics.FillRectangle(marker,4,8,3,Math.Max(1,Height-16));
-        int inset=IconKey.Length>0?40:14;
-        if(IconKey.Length>0)Icons.Draw(e.Graphics,IconKey,new Rectangle(14,(Height-20)/2,20,20),fg);
+        using(var fill=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),contrast?bg:ControlPaint.Light(bg,.10f),bg,90f))
+        using(var border=new Pen(contrast?Color.White:Selected||Primary?HarborTheme.Live:HarborTheme.Border,Selected||Primary?2:1)){e.Graphics.FillPath(fill,path);e.Graphics.DrawPath(border,path);}
+        if(!contrast&&Enabled)using(var bevel=new Pen(Color.FromArgb(48,HarborTheme.Text)))e.Graphics.DrawLine(bevel,5,3,Width-6,3);
+        if(Selected)using(var marker=new SolidBrush(contrast?Color.Black:HarborTheme.Header))e.Graphics.FillRectangle(marker,3,7,4,Math.Max(1,Height-14));
+        int icon=Navigation?30:22,inset=IconKey.Length>0?(Navigation?58:44):14;
+        if(IconKey.Length>0){if(contrast||!Enabled)Icons.DrawMono(e.Graphics,IconKey,new Rectangle(14,(Height-icon)/2,icon,icon),fg);else Icons.Draw(e.Graphics,IconKey,new Rectangle(14,(Height-icon)/2,icon,icon),fg);}
         TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(inset,0,Math.Max(0,Width-inset-8),Height),fg,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
         if(Focused){using(var p=new Pen(contrast?fg:HarborTheme.Focus,2)){p.DashStyle=DashStyle.Dot;e.Graphics.DrawRectangle(p,5,5,Math.Max(0,Width-11),Math.Max(0,Height-11));}}
     }
@@ -47,7 +48,18 @@ class ActionButton : Button
 
 static class Icons
 {
+    static readonly string[] Keys={"server","public","chart","console","users","settings","backup","clock","mods","guide","discord","cpu","ram","tps","mspt","disk","copy","save","link","folder","play","stop","refresh","lighthouse"};
+    static readonly Rectangle[] Regions={new Rectangle(35,65,197,207),new Rectangle(281,90,215,165),new Rectangle(537,65,196,195),new Rectangle(804,79,192,175),new Rectangle(1048,100,217,140),new Rectangle(1311,67,195,196),new Rectangle(37,320,191,191),new Rectangle(294,315,184,187),new Rectangle(528,315,210,195),new Rectangle(823,315,154,187),new Rectangle(1051,339,209,154),new Rectangle(1310,308,199,200),new Rectangle(30,555,218,187),new Rectangle(272,569,227,173),new Rectangle(537,548,201,204),new Rectangle(812,555,175,193),new Rectangle(1081,558,166,184),new Rectangle(1320,559,179,177),new Rectangle(35,793,192,184),new Rectangle(298,804,191,159),new Rectangle(581,800,139,171),new Rectangle(823,810,154,154),new Rectangle(1071,799,176,177),new Rectangle(1296,770,221,221)};
     public static void Draw(Graphics g,string key,Rectangle r,Color c)
+    {
+        int index=Array.IndexOf(Keys,key);Image atlas=HarborTheme.IconAtlas;
+        if(index<0||atlas==null||c==Color.White||c==Color.Yellow){DrawMono(g,key,r,c);return;}
+        Rectangle source=Regions[index];float ratio=Math.Min(r.Width/(float)source.Width,r.Height/(float)source.Height);
+        int w=Math.Max(1,(int)(source.Width*ratio)),h=Math.Max(1,(int)(source.Height*ratio));
+        var saved=g.Save();g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.PixelOffsetMode=PixelOffsetMode.Half;
+        g.DrawImage(atlas,new Rectangle(r.X+(r.Width-w)/2,r.Y+(r.Height-h)/2,w,h),source,GraphicsUnit.Pixel);g.Restore(saved);
+    }
+    public static void DrawMono(Graphics g,string key,Rectangle r,Color c)
     {
         var state=g.Save();g.TranslateTransform(r.X,r.Y);g.ScaleTransform(r.Width/20f,r.Height/20f);g.SmoothingMode=SmoothingMode.AntiAlias;
         using(var p=new Pen(c,1.7f))using(var b=new SolidBrush(c)){
@@ -133,12 +145,12 @@ partial class CraftHarbor
     }
     void StyleControls(Control rootControl)
     {
-        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,44);a.Height=46;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.AutoSizeMode=AutoSizeMode.GrowAndShrink;b.Font=new Font("Yu Gothic UI",12);}
+        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,50);a.Height=50;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.AutoSizeMode=AutoSizeMode.GrowAndShrink;b.Font=new Font("Yu Gothic UI",b is ActionButton&&((ActionButton)b).Navigation?13.5f:12.5f,b is ActionButton&&(((ActionButton)b).Navigation||((ActionButton)b).Primary)?FontStyle.Bold:FontStyle.Regular);}
             if(c is TextBox){c.AccessibleRole=AccessibleRole.Text;c.AccessibleName=c.AccessibleName??"入力欄";}
             if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=36;grid.AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.AllCells;grid.DefaultCellStyle.Padding=new Padding(8,4,8,4);grid.ColumnHeadersDefaultCellStyle.Padding=new Padding(8,4,8,4);grid.ColumnHeadersHeight=Math.Max(36,grid.Font.Height+12);grid.ColumnHeadersBorderStyle=DataGridViewHeaderBorderStyle.Single;grid.CellBorderStyle=DataGridViewCellBorderStyle.SingleHorizontal;grid.GridColor=HarborTheme.Border;if(string.IsNullOrWhiteSpace(grid.AccessibleName))grid.AccessibleName="一覧表";}
             if(c is TextBox||c is NumericUpDown||c is ComboBox)InputFrame.Wrap(c);else StyleControls(c);}
     }
-    string IconFor(string s){if(s.Contains("停止")||s.Contains("BAN"))return "stop";if(s.Contains("起動"))return "play";if(s.Contains("再起動")||s.Contains("更新")||s.Contains("取得"))return "refresh";if(s.Contains("コピー"))return "copy";if(s.Contains("バックアップ")||s.Contains("復元")||s.Contains("保存"))return "backup";if(s.Contains("設定"))return "settings";if(s.Contains("許可")||s.Contains("OP")||s.Contains("キック"))return "users";if(s.Contains("案内")||s.Contains("導入"))return "guide";if(s.Contains("接続")||s.Contains("連携"))return "link";if(s.Contains("フォルダー")||s.Contains("開く"))return "folder";return "console";}
+    string IconFor(string s){if(s.Contains("停止")||s.Contains("BAN"))return "stop";if(s.Contains("起動"))return "play";if(s.Contains("再起動")||s.Contains("更新")||s.Contains("取得"))return "refresh";if(s.Contains("コピー"))return "copy";if(s.Contains("保存"))return "save";if(s.Contains("バックアップ")||s.Contains("復元"))return "backup";if(s.Contains("設定"))return "settings";if(s.Contains("許可")||s.Contains("OP")||s.Contains("キック"))return "users";if(s.Contains("案内")||s.Contains("導入"))return "guide";if(s.Contains("接続")||s.Contains("連携"))return "link";if(s.Contains("フォルダー")||s.Contains("開く"))return "folder";return "console";}
     void CaptureStyle(Control c){baseFonts[c]=c.Font;baseColors[c]=new[]{c.BackColor,c.ForeColor};baseWidths[c]=c.Width;foreach(Control child in c.Controls)CaptureStyle(child);}
     void ResizeProfileInputs(){if(workspace==null)return;int available=Math.Max(230,workspace.ClientSize.Width-280);foreach(Control c in Descendants(workspace.TabPages[3])){int width;if(c is TextBox&&baseWidths.TryGetValue(c,out width)){if(c.Parent is InputFrame)c.Parent.Width=Math.Min(width+24,available);else c.Width=Math.Min(width,available);}if(c is Label&&c.MaximumSize.Width>0)c.MaximumSize=new Size(Math.Max(250,workspace.ClientSize.Width-48),0);}}
     void ApplyAccessibleTheme()
