@@ -62,9 +62,10 @@ partial class AstralManager : Form
     public AstralManager()
     {
         LoadProfile();
+        AutoScaleMode=AutoScaleMode.Dpi;
         Text = "Astral Server Manager — "+profile.Name;
         string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"icons","astral.ico");if(File.Exists(iconFile))Icon=new Icon(iconFile);
-        Size = new Size(1360,960); MinimumSize = new Size(1200,860);
+        MinimumSize = new Size(1024,720);Size = new Size(Math.Min(1360,Screen.PrimaryScreen.WorkingArea.Width),Math.Min(960,Screen.PrimaryScreen.WorkingArea.Height));
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Bg; ForeColor = Ink; Font = new Font("Yu Gothic UI",10);
         var outer = new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(24), ColumnCount=1, RowCount=6 };

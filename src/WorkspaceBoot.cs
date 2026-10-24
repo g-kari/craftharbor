@@ -13,7 +13,7 @@ partial class AstralManager
     static string WorkspaceRoot=AppDomain.CurrentDomain.BaseDirectory;
     static bool ValidWorkspace(string path)
     {
-        string server=Path.Combine(path,"server");return Directory.Exists(server)&&File.Exists(Path.Combine(server,"server.properties"))&&(Directory.GetFiles(server,"*.jar").Length>0||Directory.Exists(Path.Combine(server,"libraries")));
+        try{string server=Path.Combine(path,"server");return Directory.Exists(server)&&File.Exists(Path.Combine(server,"server.properties"))&&(Directory.GetFiles(server,"*.jar").Length>0||Directory.Exists(Path.Combine(server,"libraries")));}catch(ArgumentException){return false;}catch(IOException){return false;}
     }
     static bool InitializeWorkspace(string[] args)
     {

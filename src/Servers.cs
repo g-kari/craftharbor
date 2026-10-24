@@ -26,8 +26,9 @@ partial class AstralManager
     }
     static void SaveRegistry(List<RegisteredServer> servers)
     {
-        Directory.CreateDirectory(ManagerData);if(File.Exists(RegistryFile))File.Copy(RegistryFile,RegistryFile+".bak",true);File.WriteAllText(RegistryFile,new JavaScriptSerializer().Serialize(servers),new UTF8Encoding(false));
+        AtomicManagerWrite(RegistryFile,new JavaScriptSerializer().Serialize(servers));
     }
+    static void AtomicManagerWrite(string path,string text){Directory.CreateDirectory(ManagerData);string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temp,text,new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,path+".bak");else File.Move(temp,path);}
     static void RegisterWorkspace(string path)
     {
         path=CanonicalWorkspace(path);using(var gate=new Mutex(false,"Local\\AstralServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("サーバー一覧の更新を待っています。もう一度お試しください。");try{var list=RegisteredServers();if(!list.Any(x=>string.Equals(CanonicalWorkspace(x.Path),path,StringComparison.OrdinalIgnoreCase))){list.Add(new RegisteredServer{Path=path});SaveRegistry(list);}}finally{gate.ReleaseMutex();}}
@@ -48,7 +49,7 @@ partial class AstralManager
     }
     void ReserveMemory(Process process,int heap)
     {
-        Directory.CreateDirectory(ManagerData);var live=LiveReservations();live.RemoveAll(r=>string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase));live.Add(new MemoryReservation{Workspace=CanonicalWorkspace(root),Pid=process.Id,StartTicks=process.StartTime.ToUniversalTime().Ticks,HeapGiB=heap});File.WriteAllText(ReservationsFile,new JavaScriptSerializer().Serialize(live),new UTF8Encoding(false));
+        Directory.CreateDirectory(ManagerData);var live=LiveReservations();live.RemoveAll(r=>string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase));live.Add(new MemoryReservation{Workspace=CanonicalWorkspace(root),Pid=process.Id,StartTicks=process.StartTime.ToUniversalTime().Ticks,HeapGiB=heap});AtomicManagerWrite(ReservationsFile,new JavaScriptSerializer().Serialize(live));
     }
     void OpenServersDialog()
     {
