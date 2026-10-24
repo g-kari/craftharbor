@@ -1,3 +1,32 @@
+# CraftHarbor v0.4.0-preview — Harbor UI
+
+灯台と港のデザインをアプリ全体に反映した開発プレビューです。
+
+## 主な変更
+- クリーム色のヘッダー、ピクセル調のロゴ、濃紺の作業領域、深緑の主要操作、木枠へ統一。
+- 24種類のアイコンと灯台・港の装飾を追加。アプリ・setup・uninstallも同じ灯台アイコンに統一。
+- ダッシュボードの接続先とメトリクスを整理し、1536×1024ではグラフ・最近のログ・補助操作まで表示。
+- 9画面と主要ダイアログの入力、ボタン、文字、余白を共通化。本文・操作・グラフは12pt以上。文字拡大・高コントラストを維持。
+- サーバーと公開接続の独立した状態表示、常駐プロセスへの再接続、既存のログ履歴・メトリクス取得方式を維持。
+
+[デザインの変更前後](https://github.com/g-kari/craftharbor/blob/v0.4.0-preview/docs/UI_COMPARISON.md) · [検証範囲](https://github.com/g-kari/craftharbor/blob/v0.4.0-preview/docs/UI_VERIFICATION.md)
+
+## ダウンロード
+- **setup.exe**：通常はこちら。Windows x64向け、ユーザー単位でインストールします。
+- **CraftHarbor-0.4.0-preview-windows-x64.zip**：ポータブル版。
+- **uninstall.exe**：インストール版用の削除ランチャー。setupにも含まれます。
+- 各ファイルの **.sha256**：配布ファイルの照合用です。
+
+## 更新
+アプリ本体・常駐ホストを更新する前に「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じてください。その後setup.exeを実行します。ワールド・既存設定・バックアップは保持します。
+
+## 検証と制限
+GitHub-hosted Windows CIでビルド、コアチェック、常駐ホストへの再接続、MODパック/音声設定、Java 17、UIの3構成、setup/uninstallとデータ保持を検証しています。画面検証は隔離した合成データです。実Minecraftへのログイン、実機の高DPI切替、スクリーンリーダーは今回未検証です。
+
+Windows x64 / .NET Framework 4.8。未署名の開発プレビューです。Minecraft・Java・MODパック・公開接続ツール・ワールド・認証情報は同梱していません。
+
+---
+
 # 0.3.1-preview
 
 Keyboard accessibility patch for the 0.3 preview. Server-list and publishing dialogs now close with Escape. Import dialogs retain their existing cancel button behavior, including cancellation while a download is in progress. Read-only tables use Tab to move to the next control while arrow keys remain available for row selection. Styling preserves explicit accessible names on data grids instead of replacing them with a generic table name.

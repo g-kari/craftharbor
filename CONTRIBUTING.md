@@ -29,3 +29,9 @@ powershell -File tools/check-integrations.ps1
 ソースや独自アイコンへの貢献は、このプロジェクトと同じMIT Licenseで提供できるものに限ります。Minecraft、MOD、Java、トンネルツール、認証情報は同梱しないでください。
 
 メンテナーは[@g-kari](https://github.com/g-kari)です。返信の時間は保証していません。判断の理由はIssue・PRに残します。[行動規範](CODE_OF_CONDUCT.md)と[セキュリティ報告手順](SECURITY.md)も確認してください。
+
+## リリース
+
+`release.json` の版、AssemblyInfo、Inno Setup、ZIP名、CI artifactパス、リリースノートを揃えたPRを確認してmainへマージします。mainで全チェックが成功し、直前のコミットからrelease.jsonの版が変わった場合だけ、CIが同じ実行の成果物からリリースを公開します。
+
+公開前に6ファイル（setup、uninstall、ポータブルZIPと各SHA-256）のサイズ・ハッシュ・ソースSHAを確認し、まずdraftへアップロードします。GitHub側のダイジェストがすべて一致してから公開します。既存の公開済みファイルや別コミットのタグは上書きしません。失敗時は該当のmain実行を再実行でき、同じソースのdraftから再開します。PR・タグ・手動実行では公開しません。公開権限は専用ジョブのcontents:writeだけです。

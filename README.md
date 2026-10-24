@@ -22,6 +22,12 @@ SignPathへの申請は行っておらず、現時点では申請を予定して
 - 直接ダウンロードURLからのサーバー用ZIP取り込み。SHA-256検証、進捗、中止、入れ子フォルダーの認識、Create: Astralの入力例。
 - playit.gg・ngrok・直接公開・任意のポート開放ツールをサーバーごとに選択。
 
+## ダウンロード
+
+**[v0.4.0-preview の setup.exe](https://github.com/g-kari/craftharbor/releases/download/v0.4.0-preview/setup.exe)** · [リリースとポータブル版](https://github.com/g-kari/craftharbor/releases/tag/v0.4.0-preview)
+
+灯台・港の新UIと24種類のアイコンを追加しました。[変更前後の比較](https://github.com/g-kari/craftharbor/blob/main/docs/UI_COMPARISON.md)で確認できます。
+
 ## インストールと継続運転
 
 `setup.exe`はこのWindowsユーザーの`%LOCALAPPDATA%/Programs/CraftHarbor`へインストールし、スタートメニューへショートカットを追加します。デスクトップへの追加は任意です。管理者権限は不要です。
