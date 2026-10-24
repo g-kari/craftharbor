@@ -32,6 +32,6 @@ powershell -File tools/check-integrations.ps1
 
 ## リリース
 
-`release.json` の版、AssemblyInfo、Inno Setup、ZIP名、CI artifactパス、リリースノートを揃えたPRを確認してmainへマージします。mainで全チェックが成功し、直前のコミットからrelease.jsonの版が変わった場合だけ、CIが同じ実行の成果物からリリースを公開します。
+`release.json` の版、AssemblyInfo・UninstallLauncher、Inno Setup、ZIP名、CI artifactパス、リリースノートを揃えたPRを確認してmainへマージします。mainで全チェックが成功し、直前のコミットからrelease.jsonの版が変わった場合だけ、CIが同じ実行の成果物からリリースを公開します。
 
 公開前に6ファイル（setup、uninstall、ポータブルZIPと各SHA-256）のサイズ・ハッシュ・ソースSHAを確認し、まずdraftへアップロードします。GitHub側のダイジェストがすべて一致してから公開します。既存の公開済みファイルや別コミットのタグは上書きしません。失敗時は該当のmain実行を再実行でき、同じソースのdraftから再開します。PR・タグ・手動実行では公開しません。公開権限は専用ジョブのcontents:writeだけです。
