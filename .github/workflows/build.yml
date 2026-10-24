@@ -1,0 +1,46 @@
+name: Build and check Windows preview
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build application
+        shell: powershell
+        run: ./tools/build.ps1
+      - name: Run offline core checks
+        shell: powershell
+        run: |
+          $check = Start-Process -FilePath (Resolve-Path dist/AstralManager.exe) -ArgumentList '--core-check' -Wait -PassThru
+          Get-Content dist/core-check-report.txt
+          if ($check.ExitCode -ne 0) { throw 'Core checks failed.' }
+      - name: Package unsigned preview
+        shell: powershell
+        run: ./tools/package.ps1
+      - name: Check UI using a synthetic workspace
+        shell: powershell
+        run: ./tools/check-ui.ps1
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-windows-x64
+          path: |
+            dist/AstralServerManager-0.1.0-preview-windows-x64.zip
+            dist/AstralServerManager-0.1.0-preview-windows-x64.zip.sha256
+            dist/core-check-report.txt
+            work/ui-fixture/experience-verification.txt
+            work/ui-fixture/ui-preview.png
+          if-no-files-found: error
+          retention-days: 14

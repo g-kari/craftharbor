@@ -1,0 +1,50 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Web.Script.Serialization;
+using System.Windows.Forms;
+
+partial class AstralManager
+{
+    static string WorkspaceRoot=AppDomain.CurrentDomain.BaseDirectory;
+    static bool ValidWorkspace(string path)
+    {
+        return Directory.Exists(path)&&File.Exists(Path.Combine(path,"server","server.jar"))&&File.Exists(Path.Combine(path,"server","server.properties"))&&Directory.Exists(Path.Combine(path,"server","mods"));
+    }
+    static bool InitializeWorkspace(string[] args)
+    {
+        try{
+            for(int i=0;i<args.Length-1;i++)if(args[i]=="--workspace"){
+                string path=Path.GetFullPath(args[i+1]);if(!ValidWorkspace(path))throw new Exception("ワークスペースには server/server.jar、server/server.properties、server/mods が必要です。");WorkspaceRoot=path;return true;
+            }
+            if(ValidWorkspace(WorkspaceRoot))return true;
+            string settings=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AstralServerManager","workspace.txt");
+            if(File.Exists(settings)){string saved=File.ReadAllText(settings).Trim();if(ValidWorkspace(saved)){WorkspaceRoot=saved;return true;}}
+            Application.EnableVisualStyles();
+            MessageBox.Show("Create: Astralの公式サーバーパックを『server』フォルダーへ展開し、その親フォルダーを選択してください。\n\nMinecraft・MODパック・playitはこの管理アプリに含まれません。導入方法はREADMEを確認してください。","サーバーの保存先を選択");
+            using(var dialog=new FolderBrowserDialog{Description="serverフォルダーが入っているワークスペースを選択",ShowNewFolderButton=false}){
+                if(dialog.ShowDialog()!=DialogResult.OK)return false;
+                if(!ValidWorkspace(dialog.SelectedPath))throw new Exception("serverフォルダーが見つかりません。READMEの構成に合わせて、もう一度起動してください。");
+                WorkspaceRoot=dialog.SelectedPath;Directory.CreateDirectory(Path.GetDirectoryName(settings));File.WriteAllText(settings,WorkspaceRoot,new UTF8Encoding(false));return true;
+            }
+        }catch(Exception e){MessageBox.Show(e.Message,"ワークスペースを開けませんでした");return false;}
+    }
+    static void Require(bool condition,string reason){if(!condition)throw new Exception(reason);}
+    static int CoreChecks()
+    {
+        string report=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"core-check-report.txt");
+        try{
+            Require(AutoHeap(64,60)==57,"64GiB high-availability heap policy");Require(AutoHeap(64,30)==27,"64GiB constrained heap policy");Require(AutoHeap(8,3)<4,"low memory rejected");Require(AutoHeap(4,1)==0,"very low memory rejected");
+            string url="https://discord.com/api/webhooks/"+new string('1',18)+"/format_check_only";Require(ValidateWebhook(url)==url,"official webhook accepted");
+            foreach(string invalid in new[]{"http://discord.com/api/webhooks/1/a","https://discord.com.attacker.invalid/api/webhooks/1/a","https://discord.com/api/webhooks/1/a?query=1","https://example.invalid/a"}){bool rejected=false;try{ValidateWebhook(invalid);}catch(ArgumentException){rejected=true;}Require(rejected,"noncanonical webhook rejected");}
+            var json=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(DiscordPayload("Test","Local validation only"));var mentions=(Dictionary<string,object>)json["allowed_mentions"];Require(((System.Collections.IEnumerable)mentions["parse"]).Cast<object>().Count()==0,"Discord mentions disabled");
+            byte[] input=Encoding.UTF8.GetBytes("local test value");byte[] encrypted=ProtectedData.Protect(input,null,DataProtectionScope.CurrentUser);byte[] plain=ProtectedData.Unprotect(encrypted,null,DataProtectionScope.CurrentUser);Require(input.SequenceEqual(plain),"DPAPI round trip");Array.Clear(input,0,input.Length);Array.Clear(plain,0,plain.Length);
+            string temp=Path.Combine(Path.GetTempPath(),"AstralManagerChecks",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(temp);string zip=Path.Combine(temp,"invalid.zip");using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create)){using(var w=new StreamWriter(archive.CreateEntry("../outside.txt").Open()))w.Write("invalid");}bool blocked=false;try{ExtractValidated(zip,Path.Combine(temp,"stage"));}catch(InvalidDataException){blocked=true;}Require(blocked&&!File.Exists(Path.Combine(temp,"outside.txt")),"ZIP traversal blocked");
+            File.WriteAllText(report,"PASS: memory policy, webhook URL validation, mention suppression, DPAPI round trip, ZIP traversal rejection. No network calls or server startup.");return 0;
+        }catch(Exception e){File.WriteAllText(report,"FAIL: "+e);return 1;}
+    }
+}
