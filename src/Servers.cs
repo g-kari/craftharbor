@@ -18,7 +18,7 @@ partial class AstralManager
     static string ManagerData {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AstralServerManager");}}
     static string RegistryFile {get{return Path.Combine(ManagerData,"servers.json");}}
     static string ReservationsFile {get{return Path.Combine(ManagerData,"memory-reservations.json");}}
-    static string CanonicalWorkspace(string path){string full=Path.GetFullPath(path);return full.TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);}
+    static string CanonicalWorkspace(string path){string full=Path.GetFullPath(path);return full==Path.GetPathRoot(full)?full:full.TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);}
     static string WorkspaceMutexName(string path){using(var sha=SHA256.Create()){return "Local\\AstralWorkspace-"+BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalWorkspace(path).ToUpperInvariant()))).Replace("-","");}}
     static List<RegisteredServer> RegisteredServers()
     {

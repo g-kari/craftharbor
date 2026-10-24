@@ -143,7 +143,7 @@ partial class AstralManager
     }
     void StyleControls(Control rootControl)
     {
-        foreach(Control c in rootControl.Controls){if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,40);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation)a.MinimumSize=new Size(176,36);}b.Font=new Font("Yu Gothic UI",10);}
+        foreach(Control c in rootControl.Controls){if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,40);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(176,36);a.Height=36;}}b.Font=new Font("Yu Gothic UI",10);}
             if(c is TextBox){c.AccessibleRole=AccessibleRole.Text;c.AccessibleName=c.AccessibleName??"入力欄";}
             if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=32;grid.ColumnHeadersHeight=36;grid.GridColor=Color.FromArgb(55,68,84);grid.AccessibleName="一覧表";}
             StyleControls(c);}
