@@ -7,6 +7,7 @@ It does not transmit information unless requested by the user or the person oper
 
 The selected workspace holds server files, logs, settings, world backups, and optional CSV exports.
 The selected folder path is remembered under `%LOCALAPPDATA%/AstralServerManager/workspace.txt`.
+The same local directory holds `servers.json` (registered workspace paths) and `memory-reservations.json` (workspace, process ID, process start time and heap budget for coordination). These files are not uploaded or included in releases.
 The application reads process CPU and working-set memory, system physical/available memory and disk free space.
 
 Discord webhook URLs are encrypted with Windows DPAPI for the current user and stored in `discord-webhook.dpapi`.

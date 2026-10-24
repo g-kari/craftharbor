@@ -1,0 +1,12 @@
+{
+  "Name": "Minecraft Server",
+  "MinecraftVersion": "",
+  "PackName": "",
+  "PackVersion": "",
+  "ClientMode": "vanilla",
+  "ClientUrl": "",
+  "LaunchMode": "jar",
+  "JarFile": "server.jar",
+  "ArgumentsFile": "",
+  "SparkMode": "auto"
+}

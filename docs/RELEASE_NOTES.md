@@ -1,10 +1,12 @@
-# 0.1.0-preview
+# 0.2.0-preview
 
-Initial open-source preview of Astral Server Manager.
+General-purpose, multi-server preview of Astral Server Manager.
 
 This download contains the manager and its icon only. Minecraft, Java, MOD packs, playit, user worlds and credentials are not included.
 
 Features include local server controls, a metrics dashboard, console/player management, backup and restore, dedicated-PC memory budgeting, accessible navigation, participant instructions and optional Discord webhook notifications.
+
+This preview adds per-workspace server profiles, configurable Minecraft/pack metadata and participant instructions, JAR/argument-file launch modes, Java selection, port settings, optional spark/FTB capabilities, and registered server switching or concurrent windows. Heap budgets protect other managed servers' reserved growth headroom.
 
 ## Verification
 

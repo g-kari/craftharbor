@@ -1,0 +1,12 @@
+{
+  "Name": "Create Astral Server",
+  "MinecraftVersion": "1.18.2",
+  "PackName": "Create: Astral",
+  "PackVersion": "2.1.5b",
+  "ClientMode": "modpack",
+  "ClientUrl": "https://www.curseforge.com/minecraft/modpacks/create-astral",
+  "LaunchMode": "jar",
+  "JarFile": "server.jar",
+  "ArgumentsFile": "",
+  "SparkMode": "auto"
+}

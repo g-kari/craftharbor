@@ -35,15 +35,16 @@ partial class AstralManager : Form
     static string JavaPath()
     {
         string configured = Path.Combine(WorkspaceRoot,"java-path.txt");
-        if (File.Exists(configured)) return File.ReadAllText(configured).Trim();
+        if (File.Exists(configured)) {string value=File.ReadAllText(configured).Trim();if(value.Length>0)return value;}
         return "java.exe";
     }
     [STAThread] static int Main(string[] args)
     {
         if(args.Length>0&&args[0]=="--core-check")return CoreChecks();
         if(!InitializeWorkspace(args))return 1;
+        RegisterWorkspace(WorkspaceRoot);
         bool first;
-        using (var mutex = new Mutex(true,"Local\\CreateAstralManager-" + WorkspaceRoot.ToLowerInvariant().GetHashCode().ToString("X"),out first))
+        using (var mutex = new Mutex(true,WorkspaceMutexName(WorkspaceRoot),out first))
         {
             if (!first) { MessageBox.Show("管理アプリはすでに起動しています。","Astral Manager"); return 1; }
             if (args.Length > 0 && args[0] == "--self-test") return SelfTest();
@@ -60,7 +61,8 @@ partial class AstralManager : Form
     }
     public AstralManager()
     {
-        Text = "Astral Manager — Create: Astral 2.1.5b";
+        LoadProfile();
+        Text = "Astral Server Manager — "+profile.Name;
         string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"icons","astral.ico");if(File.Exists(iconFile))Icon=new Icon(iconFile);
         Size = new Size(1360,960); MinimumSize = new Size(1200,860);
         StartPosition = FormStartPosition.CenterScreen;
@@ -75,7 +77,7 @@ partial class AstralManager : Form
         Controls.Add(outer);
         var heading = new FlowLayoutPanel { Dock=DockStyle.Fill, FlowDirection=FlowDirection.TopDown, WrapContents=false };
         heading.Controls.Add(new Label { Text="ASTRAL  /  SERVER CONTROL", Font=new Font("Segoe UI",21,FontStyle.Bold), ForeColor=Accent, AutoSize=true });
-        heading.Controls.Add(new Label { Text="Create: Astral 2.1.5b  ·  Minecraft 1.18.2  ·  Fabric  ·  Java 17", AutoSize=true, ForeColor=Muted });
+        heading.Controls.Add(new Label { Text=ProfileMetadata(), AutoSize=true, ForeColor=Muted });
         outer.Controls.Add(heading,0,0);
         var cards = new TableLayoutPanel { Dock=DockStyle.Fill, ColumnCount=2, RowCount=1 };
         cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50)); cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
@@ -107,11 +109,11 @@ partial class AstralManager : Form
         backup=FlowBtn(tools,"バックアップ",delegate { Backup(); });
         FlowBtn(tools,"保存先を開く",delegate { Open(ServerDir); });
         FlowBtn(tools,"バックアップ一覧",delegate { Directory.CreateDirectory(Path.Combine(root,"backups")); Open(Path.Combine(root,"backups")); });
-        FlowBtn(tools,"遊ぶ側の導入ページ",delegate { Open("https://www.curseforge.com/minecraft/modpacks/create-astral"); });
+        FlowBtn(tools,"参加者向け案内",delegate { workspace.SelectedIndex=7; });
         outer.Controls.Add(tools,0,3);
         var logs = new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=3 };
         logs.RowStyles.Add(new RowStyle(SizeType.Absolute,27)); logs.RowStyles.Add(new RowStyle(SizeType.Percent,100));logs.RowStyles.Add(new RowStyle(SizeType.Absolute,42));
-        detail = new Label { Text="自分は localhost:25565 に接続。友達には上のplayit接続先を共有します。", ForeColor=Muted,Dock=DockStyle.Fill,AutoEllipsis=true }; logs.Controls.Add(detail,0,0);
+        detail = new Label { Text="自分は localhost:"+ServerPort+" に接続。友達には公開接続先を共有します。", ForeColor=Muted,Dock=DockStyle.Fill,AutoEllipsis=true }; logs.Controls.Add(detail,0,0);
         log=new TextBox { Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,BackColor=Color.FromArgb(11,16,24),ForeColor=Ink,Font=new Font("Consolas",10),BorderStyle=BorderStyle.FixedSingle }; logs.Controls.Add(log,0,1);
         var cmdPanel=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Padding=new Padding(0,6,0,0) };cmdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));cmdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,90));
         command=new TextBox { Dock=DockStyle.Fill,BackColor=Card,ForeColor=Ink,Font=new Font("Consolas",11) };cmdPanel.Controls.Add(command,0,0);
@@ -131,13 +133,13 @@ partial class AstralManager : Form
         timer=new System.Windows.Forms.Timer { Interval=400 };timer.Tick+=delegate { TickState(); };timer.Start();
         FormClosing+=OnClosing;
         Add("[案内] ①サーバー起動 → ②参加ユーザーを許可 → ③接続を開始 → ④playitでMinecraft Javaトンネルを作成。");
-        Add("[playit設定] ローカル接続先は 127.0.0.1:25565。発行された公開アドレスを上に保存してください。");
+        Add("[playit設定] ローカル接続先は 127.0.0.1:"+ServerPort+"。発行された公開アドレスを上に保存してください。");
         Add("[案内] バックアップはサーバー停止中に作成します。管理アプリを閉じると、ワールドを保存して停止します。");
     }
     Panel PanelCard() { return new Panel { Dock=DockStyle.Fill,BackColor=Card,Margin=new Padding(0,0,8,8) }; }
     Label LabelAt(Control p,string text,int x,int y,int size) { var l=new Label { Text=text,Location=new Point(x,y),AutoSize=true,Font=new Font("Yu Gothic UI",size),ForeColor=Ink };p.Controls.Add(l);return l; }
     Button Btn(Control p,string text,int x,int y,int w,Action action) { var b=new ActionButton { Text=text,Location=new Point(x,y),Size=new Size(w,40),FlatStyle=FlatStyle.Flat,BackColor=Card,ForeColor=Ink };b.FlatAppearance.BorderColor=Color.FromArgb(65,82,103);b.Click+=delegate { try { action(); } catch(Exception e) { Add("[エラー] "+e.Message);MessageBox.Show(e.Message,"操作できませんでした"); } };p.Controls.Add(b);return b; }
-    Button FlowBtn(Control p,string text,Action action) { var b=Btn(p,text,0,0,Math.Max(120,text.Length*14+52),action);b.Margin=new Padding(0,0,8,0);return b; }
+    Button FlowBtn(Control p,string text,Action action) { var b=Btn(p,text,0,0,Math.Max(132,text.Length*16+58),action);b.Margin=new Padding(0,0,8,0);return b; }
     void Add(string s) { queue.Enqueue(s); }
     void Open(string target) { Process.Start(new ProcessStartInfo(target) { UseShellExecute=true }); }
     void SaveSettings() { File.WriteAllLines(Settings,new string[] { ((int)memory.Value).ToString(),address.Text.Trim() },new UTF8Encoding(false)); SaveFeatureSettings(); }
@@ -156,13 +158,15 @@ partial class AstralManager : Form
     void StartServer()
     {
         if(Running(server)||backupBusy)return;
-        using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,25565)); }
-        if(!File.Exists(Path.Combine(ServerDir,"server.jar")))throw new FileNotFoundException("サーバーファイルがありません。");
+        using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
+        string launchTarget=LaunchTarget();
         ready=false;stopping=false;SaveSettings();
-        int heap=ResolveHeapBudget();
-        server=Launch(JavaPath(),"-Dfile.encoding=UTF-8 -Xms4G -Xmx"+heap+"G -jar server.jar nogui",ServerDir,"MC");
-        activeHeapGiB=heap;
-        Add("[メモリ] "+(autoMemory.Checked?"専用PC・自動":"手動")+"：最大 "+heap+" GiB / 初期 4 GiB。必要に応じてJVMが拡張します。");
+        using(var memoryGate=new Mutex(false,"Local\\AstralMemoryReservations")){
+            if(!memoryGate.WaitOne(5000))throw new Exception("他のサーバーのメモリ割当処理を待っています。もう一度お試しください。");
+            try{int heap=ResolveHeapBudget();server=Launch(JavaPath(),"-Dfile.encoding=UTF-8 -Xms4G -Xmx"+heap+"G "+launchTarget,ServerDir,"MC");activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{server.StandardInput.WriteLine("stop");server.StandardInput.Flush();throw;}
+                Add("[メモリ] "+(autoMemory.Checked?"自動・登録サーバー "+RegisteredCount()+"台":"手動")+"：最大 "+heap+" GiB / 初期 4 GiB。必要に応じてJVMが拡張します。");
+            }finally{memoryGate.ReleaseMutex();}
+        }
         ResetMetrics();
         Add("[管理] サーバーを起動しています。初回は数分かかる場合があります。");
     }
@@ -181,7 +185,7 @@ partial class AstralManager : Form
     {
         if(Running(server)||backupBusy) { Add("[案内] サーバー停止後にバックアップしてください。");return; }
         // Port check also prevents a second, externally started server being backed up live.
-        using(var s=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { s.ExclusiveAddressUse=true;s.Bind(new IPEndPoint(IPAddress.Loopback,25565)); }
+        using(var s=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { s.ExclusiveAddressUse=true;s.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
         backupBusy=true;string dest=Path.Combine(root,"backups","astral-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip");Directory.CreateDirectory(Path.GetDirectoryName(dest));Add("[管理] サーバー全体をバックアップしています…");
         Task.Run(delegate { try { ZipFile.CreateFromDirectory(ServerDir,dest+".partial",CompressionLevel.Fastest,false);File.Move(dest+".partial",dest);Add("[管理] バックアップ完了："+dest);NotifyDiscord("backup","完全バックアップ完了","サーバーの完全バックアップを保存しました。"); }catch(Exception e){Add("[バックアップ失敗] "+e.Message);NotifyDiscord("backup","バックアップ失敗","バックアップを作成できませんでした。主催者は管理アプリのログを確認してください。");}finally{backupBusy=false;} });
     }
@@ -218,21 +222,20 @@ partial class AstralManager : Form
         string root=WorkspaceRoot, report=Path.Combine(root,"verification.txt");
         try
         {
-            if(!File.Exists(Path.Combine(root,"server","server.jar")))throw new Exception("server.jar missing");
             var p=new Process { StartInfo=new ProcessStartInfo(JavaPath(),"-version") { UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true } };
-            p.Start();string v=p.StandardError.ReadToEnd();p.WaitForExit();if(p.ExitCode!=0||!Regex.IsMatch(v,@"version ""17\."))throw new Exception("Java 17 required: "+v);
-            var manager=new AstralManager();manager.CreateControl();manager.RunFeatureChecks();manager.backupHours.Value=2;manager.backupKeep.Value=7;manager.ApplyAutoBackup();manager.StartServer();
+            p.Start();string v=p.StandardError.ReadToEnd();p.WaitForExit();if(p.ExitCode!=0||!v.Contains("version"))throw new Exception("Java runtime unavailable: "+v);
+            var manager=new AstralManager();manager.CreateControl();manager.RunFeatureChecks();if(manager.FtbBackupsAvailable){manager.backupHours.Value=2;manager.backupKeep.Value=7;manager.ApplyAutoBackup();}manager.StartServer();
             DateTime deadline=DateTime.UtcNow.AddMinutes(7);
             while(!manager.ready&&Running(manager.server)&&DateTime.UtcNow<deadline)Thread.Sleep(500);
             bool success=manager.ready;
             bool metricsOk=false;string metrics="";
-            if(success){manager.UpdateFeatures(true,false);DateTime metricDeadline=DateTime.UtcNow.AddSeconds(35);while(DateTime.UtcNow<metricDeadline&&(double.IsNaN(manager.tps)||double.IsNaN(manager.mspt))){Thread.Sleep(500);manager.UpdateFeatures(true,false);}metricsOk=!double.IsNaN(manager.tps)&&!double.IsNaN(manager.mspt)&&manager.ramGiB>0;metrics="TPS="+manager.tps+", MSPT="+manager.mspt+", process RAM GiB="+manager.ramGiB+", CPU="+manager.cpuPercent+", players="+manager.onlineCount;}
+            if(success){manager.UpdateFeatures(true,false);DateTime metricDeadline=DateTime.UtcNow.AddSeconds(35);while(manager.SparkAvailable&&DateTime.UtcNow<metricDeadline&&(double.IsNaN(manager.tps)||double.IsNaN(manager.mspt))){Thread.Sleep(500);manager.UpdateFeatures(true,false);}metricsOk=manager.ramGiB>0&&(!manager.SparkAvailable||(!double.IsNaN(manager.tps)&&!double.IsNaN(manager.mspt)));metrics="TPS="+manager.tps+", MSPT="+manager.mspt+", process RAM GiB="+manager.ramGiB+", CPU="+manager.cpuPercent+", players="+manager.onlineCount;}
             if(Running(manager.server)){manager.StopServer();if(!manager.server.WaitForExit(120000))throw new Exception("Graceful stop timed out");manager.server.WaitForExit();}
             var sb=new StringBuilder();string line;while(manager.queue.TryDequeue(out line))sb.AppendLine(line);File.WriteAllText(Path.Combine(root,"verification-server.log"),sb.ToString());
             if(!success)throw new Exception("Server did not become ready; see verification-server.log");
             if(manager.server.ExitCode!=0)throw new Exception("Server exit code: "+manager.server.ExitCode);
             if(!metricsOk)throw new Exception("Live metrics not acquired: "+metrics+"; see verification-server.log");
-            File.WriteAllText(report,"PASS: Java 17; all manager tabs created; actual modpack reached Done; graceful stop completed.\r\nPASS: live "+metrics+"\r\nPASS: backup extraction verified and traversal rejected; settings read; MOD and player lists loaded.\r\n"+DateTime.Now.ToString("s"));manager.timer.Stop();manager.Dispose();return 0;
+            File.WriteAllText(report,"PASS: Java runtime; all manager tabs created; actual server reached Done; graceful stop completed.\r\nPASS: live "+metrics+"\r\nPASS: backup extraction verified and traversal rejected; settings read; MOD and player lists loaded.\r\n"+DateTime.Now.ToString("s"));manager.timer.Stop();manager.Dispose();return 0;
         }
         catch(Exception e){File.WriteAllText(report,"FAIL: "+e);return 1;}
     }

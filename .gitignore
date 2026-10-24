@@ -13,6 +13,9 @@ playit/
 agent-secret*
 discord-settings.json
 manager-options.json
+manager-profile.json
+servers.json
+memory-reservations.json
 manager-settings.txt
 java-path.txt
 verification*.txt

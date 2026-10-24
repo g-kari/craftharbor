@@ -1,0 +1,12 @@
+{
+  "Name": "Forge or NeoForge Server",
+  "MinecraftVersion": "",
+  "PackName": "",
+  "PackVersion": "",
+  "ClientMode": "custom",
+  "ClientUrl": "",
+  "LaunchMode": "argfile",
+  "JarFile": "server.jar",
+  "ArgumentsFile": "libraries/REPLACE_WITH_INSTALLED_LOADER/win_args.txt",
+  "SparkMode": "auto"
+}

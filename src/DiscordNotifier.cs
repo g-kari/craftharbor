@@ -62,15 +62,15 @@ partial class AstralManager
     {
         if(!notificationsEnabled||(category=="lifecycle"&&!notifyLifecycle)||(category=="backup"&&!notifyBackups))return;QueueDiscord(title,description);
     }
-    static string DiscordPayload(string title,string description)
+    static string DiscordPayload(string title,string description,string serverName="Minecraft Server")
     {
-        var data=new Dictionary<string,object>{{"username","Astral Manager"},{"content","🚀 **Create: Astral — "+title+"**\n"+description},{"allowed_mentions",new Dictionary<string,object>{{"parse",new string[0]}}}};return new JavaScriptSerializer().Serialize(data);
+        var data=new Dictionary<string,object>{{"username","Astral Server Manager"},{"content","🎮 **"+serverName+" — "+title+"**\n"+description},{"allowed_mentions",new Dictionary<string,object>{{"parse",new string[0]}}}};return new JavaScriptSerializer().Serialize(data);
     }
     void QueueDiscord(string title,string description)
     {
         if(!notificationsEnabled||activeWebhook.Length==0)return;
         if(discordQueue.Count>=20){Add("[Discord] 通知が集中したため、追加の通知を省略しました。");return;}
-        discordQueue.Enqueue(DiscordPayload(title,description));StartDiscordWorker();
+        discordQueue.Enqueue(DiscordPayload(title,description,profile.Name));StartDiscordWorker();
     }
     void StartDiscordWorker()
     {

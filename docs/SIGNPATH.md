@@ -32,7 +32,7 @@ MITライセンス、保守、リリース、機能説明、ソースからの�
 
 Project: Astral Server Manager
 
-This is an MIT-licensed Windows desktop manager for a user-provided Create: Astral Minecraft server workspace.
+This is an MIT-licensed general-purpose Windows desktop manager for user-provided Minecraft Java server workspaces.
 It provides local lifecycle controls, resource/tick metrics, console access, backup and recovery, and optional operator-configured Discord webhook notifications.
 The signed artifact would contain only our own application and icon, not Minecraft, Java, mods, playit binaries, user data, or credentials.
 The project is an early preview and has not yet established a broad user base. We would like to understand whether it is eligible for your program and what further evidence or project maturity would be needed.
