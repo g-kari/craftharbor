@@ -62,6 +62,7 @@ partial class CraftHarbor
         SetReviewSize(new Size(1536,1024));
         address.Text="example.invalid:25565";diskValue.Text="128.0 GiB";AppendLogRecords(new[]{"[14:22:10] [MC] 合成データ：ワールドを保存しました","[14:22:26] [MC] 合成データ：サーバー停止","[14:22:41] [公開] 合成データ：公開接続を維持しています"});
         CaptureHarborPage("ui-harbor-independent.png",0);
+        Require(historyBadge.Height>=historyBadge.Font.Height,"history state badge is visible");Require(!navigationHost.HorizontalScroll.Visible&&!navigationHost.VerticalScroll.Visible,"all nine navigation items fit at reference size");foreach(Button button in addressRow.Controls.OfType<Button>())Require(button.Width>=TextRenderer.MeasureText(button.Text,button.Font).Width+52,"address action label fits: "+button.Text);
         Require(dashboardRows.Height<=workspace.TabPages[0].ClientSize.Height+6,"wide dashboard including graph actions fits without vertical clipping: rows="+dashboardRows.Height+", available="+workspace.TabPages[0].ClientSize.Height);
         Require(player.Parent.Parent==workspace.TabPages[2].Controls[0].Controls.Cast<Control>().First(c=>c.Contains(player)),"whitelist remains in participant layout");
         logRecords.Clear();RebuildLogView();Require(recentLogs.Text.Contains("まだログはありません"),"empty recent logs explained");
