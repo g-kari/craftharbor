@@ -15,6 +15,7 @@ static class HarborTheme
         Focus=ColorTranslator.FromHtml("#F2D28A"), Live=ColorTranslator.FromHtml("#9DDB82"),
         Input=ColorTranslator.FromHtml("#10202A"), Blue=ColorTranslator.FromHtml("#76B9F5");
     public const int Gap=8;
+    public static Color Lift(Color color,int amount){return Color.FromArgb(color.A,Math.Min(255,color.R+amount),Math.Min(255,color.G+amount),Math.Min(255,color.B+amount));}
     static Image lighthouse,harbor,atlas;
     public static Image IconAtlas{get{return atlas??(atlas=Load("CraftHarbor.icons.png"));}}
     public static Image Lighthouse{get{return lighthouse??(lighthouse=Load("CraftHarbor.lighthouse.png"));}}

@@ -32,10 +32,10 @@ class ActionButton : Button
         Color bg=contrast?Color.Black:Selected||Primary?HarborTheme.Primary:BackColor;
         Color fg=contrast?(Enabled?Color.White:SystemColors.GrayText):Enabled?ForeColor:Color.FromArgb(155,171,179);
         if(contrast&&Selected){bg=Color.White;fg=Color.Black;}
-        else if(hover&&Enabled)bg=ControlPaint.Light(bg,.12f);
+        else if(hover&&Enabled)bg=HarborTheme.Lift(bg,6);
         e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);
         using(var path=SurfacePaint.Round(new RectangleF(1,1,Width-3,Height-3),3))
-        using(var fill=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),contrast?bg:ControlPaint.Light(bg,.10f),bg,90f))
+        using(var fill=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),contrast?bg:HarborTheme.Lift(bg,7),bg,90f))
         using(var border=new Pen(contrast?Color.White:Selected||Primary?HarborTheme.Live:HarborTheme.Border,Selected||Primary?2:1)){e.Graphics.FillPath(fill,path);e.Graphics.DrawPath(border,path);}
         if(!contrast&&Enabled)using(var bevel=new Pen(Color.FromArgb(48,HarborTheme.Text)))e.Graphics.DrawLine(bevel,5,3,Width-6,3);
         if(Selected)using(var marker=new SolidBrush(contrast?Color.Black:HarborTheme.Header))e.Graphics.FillRectangle(marker,3,7,4,Math.Max(1,Height-14));

@@ -35,8 +35,10 @@ partial class CraftHarbor
             using(var bitmap=new Bitmap(Width,Height))using(var graphics=Graphics.FromImage(bitmap)){graphics.CopyFromScreen(Location,Point.Empty,Size);bitmap.Save(Path.Combine(root,name),System.Drawing.Imaging.ImageFormat.Png);}
         }catch(System.ComponentModel.Win32Exception error){File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"Native desktop capture unavailable: "+error.GetType().Name+"\n");}
     }
+    static double RelativeLight(Color color){return new[]{color.R/255.0,color.G/255.0,color.B/255.0}.Select(v=>v<=.04045?v/12.92:Math.Pow((v+.055)/1.055,2.4)).Select((v,i)=>v*new[]{.2126,.7152,.0722}[i]).Sum();}
     void CheckHarborScreens()
     {
+        Require((RelativeLight(HarborTheme.Text)+.05)/(RelativeLight(HarborTheme.Lift(HarborTheme.Primary,13))+.05)>=4.5,"primary button text retains AA contrast at brightest hover highlight");
         Require(HarborTheme.Lighthouse!=null&&HarborTheme.Harbor!=null&&HarborTheme.IconAtlas!=null,"lighthouse, harbor and generated icon atlas embedded");
         largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();
         foreach(var size in new[]{new Size(1360,960),new Size(1024,720)}){
