@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate PowerShell script syntax
+        shell: powershell
+        run: ./tools/check-scripts.ps1
       - name: Build application
         shell: powershell
         run: ./tools/build.ps1
