@@ -51,7 +51,7 @@ partial class AstralManager
     {
         Directory.CreateDirectory(ManagerData);var live=LiveReservations();live.RemoveAll(r=>string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase));live.Add(new MemoryReservation{Workspace=CanonicalWorkspace(root),Pid=process.Id,StartTicks=process.StartTime.ToUniversalTime().Ticks,HeapGiB=heap});AtomicManagerWrite(ReservationsFile,new JavaScriptSerializer().Serialize(live));
     }
-    void OpenServersDialog()
+    void OpenServersDialog(bool snapshot=false)
     {
         using(var dialog=new Form{Text="登録サーバー",Size=new Size(1060,580),MinimumSize=new Size(940,500),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=Font}){
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(20)};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));dialog.Controls.Add(layout);
@@ -62,6 +62,7 @@ partial class AstralManager
             var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Padding=new Padding(0,10,0,0)};
             FlowBtn(actions,"既存サーバーを登録",delegate{using(var folder=new FolderBrowserDialog{Description="serverフォルダーの親フォルダーを選択",ShowNewFolderButton=false}){if(folder.ShowDialog()!=DialogResult.OK)return;if(!ValidWorkspace(folder.SelectedPath))throw new Exception("導入済みのJavaサーバーが見つかりません。");RegisterWorkspace(folder.SelectedPath);refresh();memoryPreviewAt=DateTime.MinValue;}});
             FlowBtn(actions,"この画面で切替",delegate{EnsureStopped();string path=selected();OpenRegistered(path,true);dialog.Close();});FlowBtn(actions,"別ウィンドウで開く",delegate{OpenRegistered(selected(),false);});FlowBtn(actions,"登録解除",delegate{string path=selected();if(string.Equals(CanonicalWorkspace(path),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))throw new Exception("現在のサーバーはこの画面から解除できません。");if(MessageBox.Show("一覧から登録を解除します。サーバーのファイルやワールドは削除しません。","登録解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;using(var gate=new Mutex(false,"Local\\AstralServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("一覧更新中です。");try{SaveRegistry(RegisteredServers().Where(x=>!string.Equals(CanonicalWorkspace(x.Path),CanonicalWorkspace(path),StringComparison.OrdinalIgnoreCase)).ToList());}finally{gate.ReleaseMutex();}}refresh();memoryPreviewAt=DateTime.MinValue;});layout.Controls.Add(actions,0,2);
+            if(snapshot)dialog.Shown+=delegate{dialog.BeginInvoke((Action)delegate{Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(root,"ui-servers.png"),System.Drawing.Imaging.ImageFormat.Png);}dialog.Close();});};
             dialog.ShowDialog(this);
         }
     }

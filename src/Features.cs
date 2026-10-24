@@ -49,7 +49,7 @@ partial class AstralManager
         var tabs=new WorkspaceTabs { Dock=DockStyle.Fill,Font=new Font("Yu Gothic UI",10) };
         outer.Controls.Add(tabs,0,4);
         var dashboard=Page(tabs,"メトリクス");dashboard.AutoScroll=true;
-        var dash=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,MinimumSize=new Size(0,430) };
+        var dash=new TableLayoutPanel { Dock=DockStyle.Top,Height=480,ColumnCount=1,RowCount=4,MinimumSize=new Size(0,480) };dashboard.AutoScrollMinSize=new Size(0,480);dashboard.Resize+=delegate{dash.Height=Math.Max(480,dashboard.ClientSize.Height-8);};
         dash.RowStyles.Add(new RowStyle(SizeType.Absolute,94));dash.RowStyles.Add(new RowStyle(SizeType.Percent,100));dash.RowStyles.Add(new RowStyle(SizeType.Absolute,30));dash.RowStyles.Add(new RowStyle(SizeType.Absolute,40));dashboard.Controls.Add(dash);
         var meters=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=7,RowCount=1 };
         for(int i=0;i<7;i++)meters.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/7));
