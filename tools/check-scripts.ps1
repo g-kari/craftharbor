@@ -4,7 +4,7 @@ foreach($file in $files){
  $tokens=$null;$errors=$null
  [void][Management.Automation.Language.Parser]::ParseFile($file.FullName,[ref]$tokens,[ref]$errors)
  if($errors.Count -gt 0){
-  foreach($error in $errors){Write-Output ($file.Name+':'+$error.Extent.StartLineNumber+': '+$error.Message)}
+  foreach($parseIssue in $errors){Write-Output ($file.Name+':'+$parseIssue.Extent.StartLineNumber+': '+$parseIssue.Message)}
   throw "PowerShell syntax validation failed: $($file.Name)"
  }
 }
