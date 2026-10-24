@@ -1,5 +1,7 @@
 # SignPath申請準備
 
+現在は申請を取りやめています。申請フォームは未送信で、契約・登録・署名の取得も行っていません。以下は将来検討する場合の参考資料です。
+
 ## 費用と適用範囲
 
 [SignPath Foundation](https://signpath.org/)は対象OSS向けの署名支援を無料で提供しています。
@@ -30,7 +32,7 @@ MITライセンス、保守、リリース、機能説明、ソースからの�
 
 ## 申請時の説明案（未送信）
 
-Project: Astral Server Manager
+Project: CraftHarbor
 
 This is an MIT-licensed general-purpose Windows desktop manager for user-provided Minecraft Java server workspaces.
 It provides local lifecycle controls, resource/tick metrics, console access, backup and recovery, and optional operator-configured Discord webhook notifications.

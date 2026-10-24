@@ -1,6 +1,8 @@
-# 0.2.0-preview
+# 0.2.1-preview
 
-General-purpose, multi-server preview of Astral Server Manager.
+General-purpose, multi-server preview of CraftHarbor.
+
+Renamed from Astral Server Manager. The application title, executable, product metadata, repository and release assets now use CraftHarbor. The new block-and-water icon represents independent server worlds managed in one harbor. Existing workspace data is retained; close the old manager before upgrading.
 
 This download contains the manager and its icon only. Minecraft, Java, MOD packs, playit, user worlds and credentials are not included.
 

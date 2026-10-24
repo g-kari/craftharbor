@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-partial class AstralManager : Form
+partial class CraftHarbor : Form
 {
     readonly string root = WorkspaceRoot;
     readonly ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
@@ -46,25 +46,25 @@ partial class AstralManager : Form
         bool first;
         using (var mutex = new Mutex(true,WorkspaceMutexName(WorkspaceRoot),out first))
         {
-            if (!first) { MessageBox.Show("管理アプリはすでに起動しています。","Astral Manager"); return 1; }
+            if (!first) { MessageBox.Show("管理アプリはすでに起動しています。","CraftHarbor"); return 1; }
             if (args.Length > 0 && args[0] == "--self-test") return SelfTest();
             if (args.Length > 0 && args[0] == "--metrics-replay") return ReplayMetrics();
             if (args.Length > 0 && args[0] == "--experience-check") return CheckExperience();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ThreadException += delegate(object s, ThreadExceptionEventArgs e) { MessageBox.Show(e.Exception.Message,"操作できませんでした"); };
-            var manager = new AstralManager();
+            var manager = new CraftHarbor();
             if (Array.IndexOf(args,"--connect") >= 0) manager.Shown += delegate { try { manager.StartTunnel(); } catch(Exception e) { manager.Add("[playitエラー] "+e.Message); } };
             Application.Run(manager);
         }
         return 0;
     }
-    public AstralManager()
+    public CraftHarbor()
     {
         LoadProfile();
         AutoScaleMode=AutoScaleMode.Dpi;
-        Text = "Astral Server Manager — "+profile.Name;
-        string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"icons","astral.ico");if(File.Exists(iconFile))Icon=new Icon(iconFile);
+        Text = "CraftHarbor — "+profile.Name;
+        string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"icons","craftharbor.ico");if(File.Exists(iconFile))Icon=new Icon(iconFile);
         MinimumSize = new Size(1024,720);Size = new Size(Math.Min(1360,Screen.PrimaryScreen.WorkingArea.Width),Math.Min(960,Screen.PrimaryScreen.WorkingArea.Height));
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Bg; ForeColor = Ink; Font = new Font("Yu Gothic UI",10);
@@ -77,7 +77,7 @@ partial class AstralManager : Form
         outer.RowStyles.Add(new RowStyle(SizeType.Absolute,48));
         Controls.Add(outer);
         var heading = new FlowLayoutPanel { Dock=DockStyle.Fill, FlowDirection=FlowDirection.TopDown, WrapContents=false };
-        heading.Controls.Add(new Label { Text="ASTRAL  /  SERVER CONTROL", Font=new Font("Segoe UI",21,FontStyle.Bold), ForeColor=Accent, AutoSize=true });
+        heading.Controls.Add(new Label { Text="CRAFTHARBOR  /  SERVER CONTROL", Font=new Font("Segoe UI",21,FontStyle.Bold), ForeColor=Accent, AutoSize=true });
         heading.Controls.Add(new Label { Text=ProfileMetadata(), AutoSize=true, ForeColor=Muted });
         outer.Controls.Add(heading,0,0);
         var cards = new TableLayoutPanel { Dock=DockStyle.Fill, ColumnCount=2, RowCount=1 };
@@ -162,7 +162,7 @@ partial class AstralManager : Form
         using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
         string launchTarget=LaunchTarget();
         ready=false;stopping=false;SaveSettings();
-        using(var memoryGate=new Mutex(false,"Local\\AstralMemoryReservations")){
+        using(var memoryGate=new Mutex(false,"Local\\CraftHarborMemoryReservations")){
             if(!memoryGate.WaitOne(5000))throw new Exception("他のサーバーのメモリ割当処理を待っています。もう一度お試しください。");
             try{int heap=ResolveHeapBudget();server=Launch(JavaPath(),"-Dfile.encoding=UTF-8 -Xms4G -Xmx"+heap+"G "+launchTarget,ServerDir,"MC");activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{server.StandardInput.WriteLine("stop");server.StandardInput.Flush();throw;}
                 Add("[メモリ] "+(autoMemory.Checked?"自動・登録サーバー "+RegisteredCount()+"台":"手動")+"：最大 "+heap+" GiB / 初期 4 GiB。必要に応じてJVMが拡張します。");
@@ -187,7 +187,7 @@ partial class AstralManager : Form
         if(Running(server)||backupBusy) { Add("[案内] サーバー停止後にバックアップしてください。");return; }
         // Port check also prevents a second, externally started server being backed up live.
         using(var s=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { s.ExclusiveAddressUse=true;s.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
-        backupBusy=true;string dest=Path.Combine(root,"backups","astral-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip");Directory.CreateDirectory(Path.GetDirectoryName(dest));Add("[管理] サーバー全体をバックアップしています…");
+        backupBusy=true;string dest=Path.Combine(root,"backups","craftharbor-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip");Directory.CreateDirectory(Path.GetDirectoryName(dest));Add("[管理] サーバー全体をバックアップしています…");
         Task.Run(delegate { try { ZipFile.CreateFromDirectory(ServerDir,dest+".partial",CompressionLevel.Fastest,false);File.Move(dest+".partial",dest);Add("[管理] バックアップ完了："+dest);NotifyDiscord("backup","完全バックアップ完了","サーバーの完全バックアップを保存しました。"); }catch(Exception e){Add("[バックアップ失敗] "+e.Message);NotifyDiscord("backup","バックアップ失敗","バックアップを作成できませんでした。主催者は管理アプリのログを確認してください。");}finally{backupBusy=false;} });
     }
     void TickState()
@@ -225,7 +225,7 @@ partial class AstralManager : Form
         {
             var p=new Process { StartInfo=new ProcessStartInfo(JavaPath(),"-version") { UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true } };
             p.Start();string v=p.StandardError.ReadToEnd();p.WaitForExit();if(p.ExitCode!=0||!v.Contains("version"))throw new Exception("Java runtime unavailable: "+v);
-            var manager=new AstralManager();manager.CreateControl();manager.RunFeatureChecks();if(manager.FtbBackupsAvailable){manager.backupHours.Value=2;manager.backupKeep.Value=7;manager.ApplyAutoBackup();}manager.StartServer();
+            var manager=new CraftHarbor();manager.CreateControl();manager.RunFeatureChecks();if(manager.FtbBackupsAvailable){manager.backupHours.Value=2;manager.backupKeep.Value=7;manager.ApplyAutoBackup();}manager.StartServer();
             DateTime deadline=DateTime.UtcNow.AddMinutes(7);
             while(!manager.ready&&Running(manager.server)&&DateTime.UtcNow<deadline)Thread.Sleep(500);
             bool success=manager.ready;

@@ -1,13 +1,14 @@
 # Privacy policy
 
-Astral Server Manager does not include analytics, tracking, advertising, or an automatic update checker.
+CraftHarbor does not include analytics, tracking, advertising, or an automatic update checker.
 It does not transmit information unless requested by the user or the person operating it.
 
 ## Local data
 
 The selected workspace holds server files, logs, settings, world backups, and optional CSV exports.
-The selected folder path is remembered under `%LOCALAPPDATA%/AstralServerManager/workspace.txt`.
+The selected folder path is remembered under `%LOCALAPPDATA%/CraftHarbor/workspace.txt`.
 The same local directory holds `servers.json` (registered workspace paths) and `memory-reservations.json` (workspace, process ID, process start time and heap budget for coordination). These files are not uploaded or included in releases.
+On first use after the rename, existing `workspace.txt` and `servers.json` files from the former `%LOCALAPPDATA%/AstralServerManager` directory are copied locally if their CraftHarbor counterparts do not exist. Legacy files are preserved.
 The application reads process CPU and working-set memory, system physical/available memory and disk free space.
 
 Discord webhook URLs are encrypted with Windows DPAPI for the current user and stored in `discord-webhook.dpapi`.

@@ -1,4 +1,4 @@
-# Astral Server Manager
+# CraftHarbor
 
 Windows向けの汎用Minecraft Javaサーバーマネージャーです。
 Vanilla、Paper/Purpur、Fabric、導入済みForge/NeoForgeやMODパックを、サーバーごとのプロファイルで管理します。
@@ -6,7 +6,7 @@ MIT License。Minecraft、個々のMODパック、playit.gg、Discordの公式�
 
 **開発プレビューです。現在のリリースは未署名です。** Smart App Controlが有効なPCでは起動できない場合があります。
 保護機能の無効化や回避を行う機能はありません。署名の審査・取得は未完了です。
-本プロジェクトにSignPathの支援や証明書が付与されたという意味ではありません。
+SignPathへの申請は行っておらず、現時点では申請を予定していません。
 
 ## 機能
 
@@ -24,7 +24,7 @@ MIT License。Minecraft、個々のMODパック、playit.gg、Discordの公式�
 現在はMinecraft Java Edition向けです。必要なJava版・サーバー版・ランチャーは各プロファイルで設定します。Bedrockは対象外です。
 JAR起動とJava引数ファイル起動に対応します。全サーバー実装の完全互換を保証するものではありません。
 過去のローカル版ではサーバー起動・保存停止と実測TPSの表示を確認しています。
-現行プレビューの新UI・自動メモリ・Webhookは、この開発PCの署名要件により実機検証が未完了です。
+実機での確認状況はリリースノートを参照してください。Discord Webhookの実送信は未検証です。
 CIのチェックは計算・検証ロジックと合成データを使うUI生成が対象で、実サーバーの接続やスクリーンリーダー対応を保証しません。
 CIの画面プレビューは空の合成ワークスペースを使ったもので、プレイヤーの本物のワールドや稼働中サーバーの画面ではありません。
 
@@ -56,7 +56,7 @@ my-server/
 ```
 
 管理アプリを起動して、`server`の親フォルダーを選びます。アプリと同じフォルダーに上記構成があれば自動検出します。
-`AstralManager.exe --workspace "D:\Minecraft\my-server"` でも指定できます。
+`CraftHarbor.exe --workspace "D:\Minecraft\my-server"` でも指定できます。
 サーバー未導入時は選択をキャンセルし、READMEに従って準備してください。
 
 初期値のポートは25565です。実際のポートはserver.propertiesから読み取り、プロファイル画面から変更できます。
@@ -77,7 +77,7 @@ powershell -File tools/package.ps1
 ネットワーク送信やMinecraft起動をしないコアチェック:
 
 ```powershell
-Start-Process dist/AstralManager.exe -ArgumentList --core-check -Wait
+Start-Process dist/CraftHarbor.exe -ArgumentList --core-check -Wait
 Get-Content dist/core-check-report.txt
 ```
 
@@ -104,7 +104,8 @@ Alt+1〜9で画面切替、Ctrl+Lでコンソール入力、F1で参加者向け
 
 保存してサーバーを停止し、管理アプリを終了してから、アプリの展開フォルダーを削除します。
 ワールドを残す場合はワークスペースを削除しないでください。
-保存したワークスペース選択情報は`%LOCALAPPDATA%/AstralServerManager/workspace.txt`です。
+保存したワークスペース選択情報は`%LOCALAPPDATA%/CraftHarbor/workspace.txt`です。
+旧Astral Server Managerの`workspace.txt`と`servers.json`は、新しい保存先に同名ファイルがない場合だけコピーします。旧版を終了してから更新してください。ワールドやワークスペース内の設定はそのまま利用します。
 Webhook設定は管理アプリの「送信先を解除」で消去できます。Discord側のWebhookはDiscord上で管理してください。
 
 ## 参考・外部サービス

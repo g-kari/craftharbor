@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
-partial class AstralManager
+partial class CraftHarbor
 {
     TextBox webhookInput;
     CheckBox webhookEnabled,webhookLifecycle,webhookBackups;
@@ -37,7 +37,7 @@ partial class AstralManager
         layout.Controls.Add(new Label{Text="Webhook URL",AutoSize=true});webhookInput=new TextBox{Width=780,UseSystemPasswordChar=true,BackColor=Card,ForeColor=Ink,AccessibleName="DiscordのWebhook URL",AccessibleDescription="秘密の送信先URL。表示は伏せられ、暗号化して保存されます。"};layout.Controls.Add(webhookInput);
         webhookEnabled=CheckSetting(layout,"Discord通知を有効にする");webhookLifecycle=CheckSetting(layout,"起動完了・停止・異常終了を通知");webhookBackups=CheckSetting(layout,"完全バックアップ・復元の結果を通知");webhookLifecycle.Checked=webhookBackups.Checked=true;
         var actions=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Margin=new Padding(0,12,0,12)};
-        FlowBtn(actions,"設定を保存",delegate{SaveDiscord();});FlowBtn(actions,"テスト送信",delegate{if(MessageBox.Show("設定したWebhookのDiscordチャンネルへテスト通知を1件送ります。","Discord通知",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;SaveDiscord();if(!notificationsEnabled)throw new Exception("通知を有効にして保存してください。");QueueDiscord("テスト通知","Astral Managerからの接続確認です。");});
+        FlowBtn(actions,"設定を保存",delegate{SaveDiscord();});FlowBtn(actions,"テスト送信",delegate{if(MessageBox.Show("設定したWebhookのDiscordチャンネルへテスト通知を1件送ります。","Discord通知",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;SaveDiscord();if(!notificationsEnabled)throw new Exception("通知を有効にして保存してください。");QueueDiscord("テスト通知","CraftHarborからの接続確認です。");});
         FlowBtn(actions,"送信先を解除",delegate{if(MessageBox.Show("このPCに保存したWebhook設定を解除します。Discord側のWebhook自体は残ります。","通知解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;notificationsEnabled=false;activeWebhook="";webhookEnabled.Checked=false;webhookInput.Clear();string ignored;while(discordQueue.TryDequeue(out ignored)){}if(File.Exists(DiscordSecret))File.Delete(DiscordSecret);SaveDiscordOptions();webhookStatus.Text="通知は無効です。";});layout.Controls.Add(actions);
         webhookStatus=new Label{Text="通知は無効です。",AutoSize=true,ForeColor=Accent,MaximumSize=new Size(820,0),AccessibleName="Discord通知の状態"};layout.Controls.Add(webhookStatus);
         layout.Controls.Add(new Label{Text="・初期状態は無効。定期通知や全員メンションは送りません。\n・通知内容はサーバー名と運用結果のみ。ログ全文、認証情報、参加者名は送信しません。\n・参加者向けの長い案内は「参加者向け案内」からコピーして投稿できます。\n・管理アプリが動作している間に通知します。",AutoSize=true,ForeColor=Muted,MaximumSize=new Size(820,0),Margin=new Padding(0,20,0,0)});
@@ -64,7 +64,7 @@ partial class AstralManager
     }
     static string DiscordPayload(string title,string description,string serverName="Minecraft Server")
     {
-        var data=new Dictionary<string,object>{{"username","Astral Server Manager"},{"content","🎮 **"+serverName+" — "+title+"**\n"+description},{"allowed_mentions",new Dictionary<string,object>{{"parse",new string[0]}}}};return new JavaScriptSerializer().Serialize(data);
+        var data=new Dictionary<string,object>{{"username","CraftHarbor"},{"content","🎮 **"+serverName+" — "+title+"**\n"+description},{"allowed_mentions",new Dictionary<string,object>{{"parse",new string[0]}}}};return new JavaScriptSerializer().Serialize(data);
     }
     void QueueDiscord(string title,string description)
     {

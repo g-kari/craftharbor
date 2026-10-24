@@ -13,13 +13,13 @@ using System.Windows.Forms;
 class RegisteredServer { public string Path=""; }
 class MemoryReservation { public string Workspace="";public int Pid;public long StartTicks;public int HeapGiB; }
 
-partial class AstralManager
+partial class CraftHarbor
 {
-    static string ManagerData {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AstralServerManager");}}
+    static string ManagerData {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor");}}
     static string RegistryFile {get{return Path.Combine(ManagerData,"servers.json");}}
     static string ReservationsFile {get{return Path.Combine(ManagerData,"memory-reservations.json");}}
     static string CanonicalWorkspace(string path){string full=Path.GetFullPath(path);return full==Path.GetPathRoot(full)?full:full.TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);}
-    static string WorkspaceMutexName(string path){using(var sha=SHA256.Create()){return "Local\\AstralWorkspace-"+BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalWorkspace(path).ToUpperInvariant()))).Replace("-","");}}
+    static string WorkspaceMutexName(string path){using(var sha=SHA256.Create()){return "Local\\CraftHarborWorkspace-"+BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalWorkspace(path).ToUpperInvariant()))).Replace("-","");}}
     static List<RegisteredServer> RegisteredServers()
     {
         if(!File.Exists(RegistryFile))return new List<RegisteredServer>();return new JavaScriptSerializer().Deserialize<List<RegisteredServer>>(File.ReadAllText(RegistryFile))??new List<RegisteredServer>();
@@ -31,7 +31,7 @@ partial class AstralManager
     static void AtomicManagerWrite(string path,string text){Directory.CreateDirectory(ManagerData);string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temp,text,new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,path+".bak");else File.Move(temp,path);}
     static void RegisterWorkspace(string path)
     {
-        path=CanonicalWorkspace(path);using(var gate=new Mutex(false,"Local\\AstralServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("サーバー一覧の更新を待っています。もう一度お試しください。");try{var list=RegisteredServers();if(!list.Any(x=>string.Equals(CanonicalWorkspace(x.Path),path,StringComparison.OrdinalIgnoreCase))){list.Add(new RegisteredServer{Path=path});SaveRegistry(list);}}finally{gate.ReleaseMutex();}}
+        path=CanonicalWorkspace(path);using(var gate=new Mutex(false,"Local\\CraftHarborServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("サーバー一覧の更新を待っています。もう一度お試しください。");try{var list=RegisteredServers();if(!list.Any(x=>string.Equals(CanonicalWorkspace(x.Path),path,StringComparison.OrdinalIgnoreCase))){list.Add(new RegisteredServer{Path=path});SaveRegistry(list);}}finally{gate.ReleaseMutex();}}
     }
     int RegisteredCount(){return Math.Max(1,RegisteredServers().Count(x=>ValidWorkspace(x.Path)));}
     static List<MemoryReservation> LiveReservations()
@@ -61,7 +61,7 @@ partial class AstralManager
             Func<string> selected=delegate{if(grid.SelectedRows.Count==0)throw new Exception("サーバーを選択してください。");return Convert.ToString(grid.SelectedRows[0].Cells[1].Value);};
             var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Padding=new Padding(0,10,0,0)};
             FlowBtn(actions,"既存サーバーを登録",delegate{using(var folder=new FolderBrowserDialog{Description="serverフォルダーの親フォルダーを選択",ShowNewFolderButton=false}){if(folder.ShowDialog()!=DialogResult.OK)return;if(!ValidWorkspace(folder.SelectedPath))throw new Exception("導入済みのJavaサーバーが見つかりません。");RegisterWorkspace(folder.SelectedPath);refresh();memoryPreviewAt=DateTime.MinValue;}});
-            FlowBtn(actions,"この画面で切替",delegate{EnsureStopped();string path=selected();OpenRegistered(path,true);dialog.Close();});FlowBtn(actions,"別ウィンドウで開く",delegate{OpenRegistered(selected(),false);});FlowBtn(actions,"登録解除",delegate{string path=selected();if(string.Equals(CanonicalWorkspace(path),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))throw new Exception("現在のサーバーはこの画面から解除できません。");if(MessageBox.Show("一覧から登録を解除します。サーバーのファイルやワールドは削除しません。","登録解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;using(var gate=new Mutex(false,"Local\\AstralServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("一覧更新中です。");try{SaveRegistry(RegisteredServers().Where(x=>!string.Equals(CanonicalWorkspace(x.Path),CanonicalWorkspace(path),StringComparison.OrdinalIgnoreCase)).ToList());}finally{gate.ReleaseMutex();}}refresh();memoryPreviewAt=DateTime.MinValue;});layout.Controls.Add(actions,0,2);
+            FlowBtn(actions,"この画面で切替",delegate{EnsureStopped();string path=selected();OpenRegistered(path,true);dialog.Close();});FlowBtn(actions,"別ウィンドウで開く",delegate{OpenRegistered(selected(),false);});FlowBtn(actions,"登録解除",delegate{string path=selected();if(string.Equals(CanonicalWorkspace(path),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))throw new Exception("現在のサーバーはこの画面から解除できません。");if(MessageBox.Show("一覧から登録を解除します。サーバーのファイルやワールドは削除しません。","登録解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;using(var gate=new Mutex(false,"Local\\CraftHarborServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("一覧更新中です。");try{SaveRegistry(RegisteredServers().Where(x=>!string.Equals(CanonicalWorkspace(x.Path),CanonicalWorkspace(path),StringComparison.OrdinalIgnoreCase)).ToList());}finally{gate.ReleaseMutex();}}refresh();memoryPreviewAt=DateTime.MinValue;});layout.Controls.Add(actions,0,2);
             if(snapshot)dialog.Shown+=delegate{dialog.BeginInvoke((Action)delegate{Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(root,"ui-servers.png"),System.Drawing.Imaging.ImageFormat.Png);}dialog.Close();});};
             dialog.ShowDialog(this);
         }

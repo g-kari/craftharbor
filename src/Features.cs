@@ -16,7 +16,7 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 
-partial class AstralManager
+partial class CraftHarbor
 {
     Label cpuValue,ramValue,tpsValue,msptValue,uptimeValue,onlineValue,diskValue,metricsNote;
     Chart history;
@@ -151,8 +151,8 @@ partial class AstralManager
         }catch(Exception e){metricsNote.Text="メトリクス取得待ち："+e.Message;}
     }
     void RequestRestart(){if(!Running(server)){StartServer();return;}if(stopping)return;restartPending=true;StopServer();Add("[運用] 保存・停止後に再起動します。");}
-    void ExportMetrics(){using(var d=new SaveFileDialog{Filter="CSV|*.csv",FileName="astral-metrics-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".csv"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllLines(d.FileName,new[]{"timestamp_utc,cpu_pc_percent,process_ram_gib,tps_5s,mspt_median,players"}.Concat(samples),new UTF8Encoding(true));Add("[管理] CSVを保存しました。");}}
-    void ExportLog(){using(var d=new SaveFileDialog{Filter="Text|*.txt",FileName="astral-log-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".txt"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllText(d.FileName,Regex.Replace(log.Text,@"https://playit\.gg/claim/\w+","[claim URL hidden]"),new UTF8Encoding(true));}}
+    void ExportMetrics(){using(var d=new SaveFileDialog{Filter="CSV|*.csv",FileName="craftharbor-metrics-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".csv"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllLines(d.FileName,new[]{"timestamp_utc,cpu_pc_percent,process_ram_gib,tps_5s,mspt_median,players"}.Concat(samples),new UTF8Encoding(true));Add("[管理] CSVを保存しました。");}}
+    void ExportLog(){using(var d=new SaveFileDialog{Filter="Text|*.txt",FileName="craftharbor-log-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".txt"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllText(d.FileName,Regex.Replace(log.Text,@"https://playit\.gg/claim/\w+","[claim URL hidden]"),new UTF8Encoding(true));}}
     void RefreshUsers()
     {
         if(usersGrid==null)return;var users=new SortedDictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
@@ -197,7 +197,7 @@ partial class AstralManager
     }
     void RunFeatureChecks()
     {
-        string scratch=Path.Combine(Path.GetTempPath(),"AstralManagerChecks",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(scratch);
+        string scratch=Path.Combine(Path.GetTempPath(),"CraftHarborChecks",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(scratch);
         string backup=Directory.GetFiles(Path.Combine(root,"backups"),"*.zip").First();string stage=Path.Combine(scratch,"restore-valid");ExtractValidated(backup,stage);
         if(!File.Exists(Path.Combine(stage,"whitelist.json")))throw new Exception("Whitelist not restored");
         string invalid=Path.Combine(scratch,"traversal.zip");using(var zip=ZipFile.Open(invalid,ZipArchiveMode.Create)){using(var w=new StreamWriter(zip.CreateEntry("../escape.txt").Open()))w.Write("must not escape");}
@@ -207,7 +207,7 @@ partial class AstralManager
     }
     static int ReplayMetrics()
     {
-        var manager=new AstralManager();
+        var manager=new CraftHarbor();
         foreach(string line in File.ReadAllLines(Path.Combine(manager.root,"verification-server.log")))if(line.StartsWith("[MC] "))manager.ParseServerMetrics(line.Substring(5));
         bool ok=!double.IsNaN(manager.tps)&&!double.IsNaN(manager.mspt);
         File.WriteAllText(Path.Combine(manager.root,"metrics-parser-verification.txt"),(ok?"PASS":"FAIL")+": actual spark output replay, TPS="+manager.tps+", MSPT="+manager.mspt);

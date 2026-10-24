@@ -21,7 +21,7 @@ class ServerProfile
     public string SparkMode="auto";
 }
 
-partial class AstralManager
+partial class CraftHarbor
 {
     ServerProfile profile;
     TextBox profileName,profileVersion,profilePack,profilePackVersion,profileUrl,profileJar,profileArgs,profileJava;
@@ -86,11 +86,11 @@ partial class AstralManager
     }
     void RefreshProfileLabels()
     {
-        Text="Astral Server Manager — "+profile.Name;if(serverIdentity!=null)serverIdentity.Text=profile.Name;if(profileSummary!=null)profileSummary.Text=ProfileMetadata();if(detail!=null)detail.Text="自分の接続先 localhost:"+ServerPort+"。友達には公開接続先を共有します。";
+        Text="CraftHarbor — "+profile.Name;if(serverIdentity!=null)serverIdentity.Text=profile.Name;if(profileSummary!=null)profileSummary.Text=ProfileMetadata();if(detail!=null)detail.Text="自分の接続先 localhost:"+ServerPort+"。友達には公開接続先を共有します。";
     }
     void SwitchWorkspace()
     {
-        EnsureStopped();using(var dialog=new FolderBrowserDialog{Description="serverフォルダーが入っている別のワークスペースを選択",ShowNewFolderButton=false}){if(dialog.ShowDialog()!=DialogResult.OK)return;if(!ValidWorkspace(dialog.SelectedPath))throw new Exception("有効なサーバーワークスペースではありません。");string selected=dialog.SelectedPath;if(string.Equals(Path.GetFullPath(selected),Path.GetFullPath(root),StringComparison.OrdinalIgnoreCase))return;SaveSettings();StopTunnel();string saved=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AstralServerManager","workspace.txt");Directory.CreateDirectory(Path.GetDirectoryName(saved));File.WriteAllText(saved,selected);System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath,"--workspace "+Q(selected)){UseShellExecute=false});quitting=true;Close();}
+        EnsureStopped();using(var dialog=new FolderBrowserDialog{Description="serverフォルダーが入っている別のワークスペースを選択",ShowNewFolderButton=false}){if(dialog.ShowDialog()!=DialogResult.OK)return;if(!ValidWorkspace(dialog.SelectedPath))throw new Exception("有効なサーバーワークスペースではありません。");string selected=dialog.SelectedPath;if(string.Equals(Path.GetFullPath(selected),Path.GetFullPath(root),StringComparison.OrdinalIgnoreCase))return;SaveSettings();StopTunnel();string saved=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor","workspace.txt");Directory.CreateDirectory(Path.GetDirectoryName(saved));File.WriteAllText(saved,selected);System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath,"--workspace "+Q(selected)){UseShellExecute=false});quitting=true;Close();}
     }
     string BuildParticipantGuide()
     {

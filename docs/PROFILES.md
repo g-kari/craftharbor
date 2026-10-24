@@ -1,11 +1,11 @@
 # Server profiles
 
-Astral Server Manager is a general-purpose Minecraft **Java Edition** manager. Bedrock and arbitrary game servers are outside the current scope.
+CraftHarbor is a general-purpose Minecraft **Java Edition** manager. Bedrock and arbitrary game servers are outside the current scope.
 
 Each workspace has its own `server/`, backups, playit credentials and optional `manager-profile.json`. Use **サーバー一覧** to register existing workspaces. **この画面で切替** requires the current server to be stopped. **別ウィンドウで開く** keeps the current server and opens another manager window, allowing concurrent servers.
 Duplicate manager windows for one canonical workspace are blocked. Use distinct ports and distinct playit tunnels for concurrent servers.
 
-The registry is stored locally under `%LOCALAPPDATA%/AstralServerManager/servers.json`. Removing a registration does not delete a server or world.
+The registry is stored locally under `%LOCALAPPDATA%/CraftHarbor/servers.json`. Removing a registration does not delete a server or world.
 Auto-memory uses the registered server count as a sharing plan and protects live managed processes' reserved heap headroom. Register the servers you plan to run before starting them. A running JVM's maximum cannot be reduced dynamically; restart existing servers to rebalance after adding a profile.
 
 ## Launch types

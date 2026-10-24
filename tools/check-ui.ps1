@@ -29,7 +29,7 @@ if($Scenario -eq 'argfile') {
     [IO.File]::WriteAllText((Join-Path $fixture 'manager-profile.json'),'{"Name":"Java Argfile Server","ClientMode":"custom","LaunchMode":"argfile","ArgumentsFile":"libraries/example/win_args.txt","SparkMode":"disabled"}')
 }
 foreach($name in @('whitelist.json','ops.json','banned-players.json')) { [IO.File]::WriteAllText((Join-Path $server $name),'[]') }
-$exe = Join-Path $repoRoot 'dist\AstralManager.exe'
+$exe = Join-Path $repoRoot 'dist\CraftHarbor.exe'
 $check = Start-Process -FilePath $exe -ArgumentList @('--experience-check','--workspace',('"'+$fixture+'"')) -Wait -PassThru
 $report = Join-Path $fixture 'experience-verification.txt'
 if(Test-Path -LiteralPath $report) { Get-Content -LiteralPath $report }

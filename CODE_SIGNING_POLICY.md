@@ -2,7 +2,7 @@
 
 ## Current status
 
-This project is preparing to apply to the SignPath Foundation program. It is not currently enrolled, sponsored, approved, or signed by SignPath.
+No SignPath application has been submitted. The maintainer has decided not to pursue enrollment at this time. This project is not enrolled, sponsored, approved, or signed by SignPath.
 Current preview binaries are unsigned. Do not interpret this document as a signing endorsement or as a request to disable Windows protections.
 
 ## Proposed roles
@@ -17,7 +17,7 @@ The roles above describe the intended policy; they do not assert that SignPath p
 
 Only this project's own application and icon are eligible for this project's signing request.
 Minecraft, Java, MOD packs, playit, user worlds, credentials, and external binaries are excluded from the signing artifact.
-Product metadata identifies Astral Server Manager; all product/file versions match within a build.
+Product metadata identifies CraftHarbor; all product/file versions match within a build.
 Only CI artifacts built from a reviewed repository revision should be submitted. Each signing request requires manual approval.
 
 ## Future attribution
