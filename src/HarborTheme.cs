@@ -21,13 +21,14 @@ static class HarborTheme
     public static Image Harbor{get{return harbor??(harbor=Load("CraftHarbor.harbor.png"));}}
     static Image Load(string name){using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream(name)){if(stream==null)return null;using(var source=Image.FromStream(stream))return new Bitmap(source);}}
     public static bool Contrast(Control c){return SystemInformation.HighContrast||c.BackColor==Color.Black;}
-    public static void Frame(Graphics g,Rectangle bounds,bool wood,bool contrast)
+    public static void Frame(Graphics g,Rectangle bounds,bool wood,bool contrast,bool heavy=false)
     {
         if(bounds.Width<12||bounds.Height<12)return;g.SmoothingMode=SmoothingMode.None;
         Color edge=contrast?Color.White:Border;
         using(var p=new Pen(edge)){g.DrawRectangle(p,bounds.X+1,bounds.Y+1,bounds.Width-3,bounds.Height-3);}
         if(!wood||contrast)return;
         int l=bounds.Left,t=bounds.Top,r=bounds.Right-1,b=bounds.Bottom-1;
+        if(heavy){using(var rail=new Pen(Wood,5))g.DrawRectangle(rail,l+3,t+3,r-l-6,b-t-6);using(var shadow=new Pen(Color.FromArgb(65,40,21)))g.DrawRectangle(shadow,l+6,t+6,r-l-12,b-t-12);}
         using(var dark=new Pen(Color.FromArgb(62,38,20)))using(var middle=new Pen(Wood,2))using(var light=new Pen(Color.FromArgb(224,164,82))){
             g.DrawRectangle(dark,l,t,r-l,b-t);g.DrawLine(middle,l+4,t+2,r-4,t+2);g.DrawLine(middle,l+4,b-2,r-4,b-2);
             g.DrawLine(light,l+5,t+1,r-5,t+1);g.DrawLine(light,l+5,b-3,r-5,b-3);
@@ -61,7 +62,7 @@ class HarborArtwork:Control
 }
 class HarborFrame:SurfaceTable
 {
-    public bool DivideColumns;
+    public bool DivideColumns,StrongFrame;
     public HarborFrame(){WoodFrame=true;Padding=new Padding(12);}
     protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);if(!DivideColumns)return;var widths=GetColumnWidths();int x=Padding.Left;using(var pen=new Pen(HarborTheme.Contrast(this)?Color.White:HarborTheme.Border)){for(int i=0;i<widths.Length-1;i++){x+=widths[i];e.Graphics.DrawLine(pen,x-1,Padding.Top,x-1,Height-Padding.Bottom);}}}
 }

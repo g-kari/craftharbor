@@ -8,7 +8,7 @@ partial class CraftHarbor
     TableLayoutPanel harborMain,harborHeader,dashboardRows,historyAndLogs,sidebarLayout,harborBody,harborShell,addressRow;
     FlowLayoutPanel headerActions;
     Label dashboardTitle,footerState;
-    RichTextBox recentLogs;
+    TextBox recentLogs;
     HarborArtwork sidebarArt;
     ActionButton launchAll;
     Button shareAccountButton;
@@ -30,7 +30,7 @@ partial class CraftHarbor
 
         var shell=harborShell=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,BackColor=Bg,Padding=new Padding(4),Margin=Padding.Empty};
         shell.RowStyles.Add(new RowStyle(SizeType.Absolute,52));shell.RowStyles.Add(new RowStyle(SizeType.Percent,100));shell.RowStyles.Add(new RowStyle(SizeType.Absolute,34));Controls.Add(shell);
-        shell.Paint+=delegate(object sender,PaintEventArgs e){HarborTheme.Frame(e.Graphics,shell.ClientRectangle,true,highContrast!=null&&highContrast.Checked);};
+        shell.Paint+=delegate(object sender,PaintEventArgs e){HarborTheme.Frame(e.Graphics,shell.ClientRectangle,true,highContrast!=null&&highContrast.Checked,true);};
         var masthead=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,BackColor=HarborTheme.Header,Margin=Padding.Empty,Padding=new Padding(14,3,14,3)};
         masthead.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,48));masthead.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         masthead.Controls.Add(new HarborArtwork{LogoOnly=true,Dock=DockStyle.Fill,BackColor=HarborTheme.Header},0,0);
@@ -70,7 +70,7 @@ partial class CraftHarbor
         dashboardRows=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=860,Margin=Padding.Empty};
         foreach(int h in new[]{180,104,196,376})dashboardRows.RowStyles.Add(new RowStyle(SizeType.Absolute,h));
         dashboard.Controls.Add(dashboardRows);
-        var status=statusFrame=new HarborFrame{DivideColumns=true,Dock=DockStyle.Fill,ColumnCount=2,RowCount=2,BackColor=Card,Margin=new Padding(0,0,4,10)};
+        var status=statusFrame=new HarborFrame{StrongFrame=true,DivideColumns=true,Dock=DockStyle.Fill,ColumnCount=2,RowCount=2,BackColor=Card,Margin=new Padding(0,0,4,10)};
         status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
         status.RowStyles.Add(new RowStyle(SizeType.Percent,100));status.RowStyles.Add(new RowStyle(SizeType.Absolute,0));
         status.Controls.Add(StatusColumn(serverState,new[]{start,stop},heapPreview,"server"),0,0);
@@ -99,7 +99,9 @@ partial class CraftHarbor
         var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in metricActions){button.Margin=new Padding(0,4,6,0);((ActionButton)button).IconKey=button.Text.Contains("CSV")?"guide":button.Text.Contains("診断")?"chart":"refresh";actions.Controls.Add(button);}graph.Controls.Add(actions,0,3);historyAndLogs.Controls.Add(graph,0,0);
         var logs=new HarborFrame{Dock=DockStyle.Fill,BackColor=Card,RowCount=3,ColumnCount=1,Padding=new Padding(10),Margin=new Padding(0,0,4,0)};
         logs.RowStyles.Add(new RowStyle(SizeType.Absolute,36));logs.RowStyles.Add(new RowStyle(SizeType.Percent,100));logs.RowStyles.Add(new RowStyle(SizeType.Absolute,56));logs.Controls.Add(SectionTitle("最近のログ","guide"),0,0);
-        recentLogs=new RichTextBox{Dock=DockStyle.Fill,ReadOnly=true,DetectUrls=false,BorderStyle=BorderStyle.None,ScrollBars=RichTextBoxScrollBars.Vertical,WordWrap=true,BackColor=HarborTheme.Input,ForeColor=Ink,Font=new Font("Yu Gothic UI",12),AccessibleName="最近のログ（すべての種類）"};var recentFrame=new SurfacePanel{Dock=DockStyle.Fill,Padding=new Padding(12,10,12,10),BackColor=HarborTheme.Input,Margin=Padding.Empty};recentFrame.Controls.Add(recentLogs);logs.Controls.Add(recentFrame,0,1);
+        recentLogs=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,WordWrap=true,BackColor=HarborTheme.Input,ForeColor=Ink,Font=new Font("Yu Gothic UI",12),AccessibleName="最近のログ（すべての種類）"};logs.Controls.Add(recentLogs,0,1);
+        recentLogs.Resize+=delegate{FitRecentLogScroll();};
+
         var openConsole=(ActionButton)Btn(logs,"コンソールを開く",0,0,220,delegate{workspace.SelectedIndex=1;command.Focus();});openConsole.Dock=DockStyle.Fill;openConsole.IconKey="console";logs.Controls.Remove(openConsole);logs.Controls.Add(openConsole,0,2);
         historyAndLogs.Controls.Add(logs,1,0);dashboardRows.Controls.Add(historyAndLogs,0,3);
         oldDashboard.Dispose();
@@ -158,10 +160,14 @@ partial class CraftHarbor
         if(pageHeading==null||workspace.SelectedIndex<0)return;pageHeading.Text=PageNames[workspace.SelectedIndex];dashboardTitle.Text=workspace.SelectedIndex==0?profile.Name:PageNames[workspace.SelectedIndex];
         tips.SetToolTip(dashboardTitle,profile.Name);for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==workspace.SelectedIndex;navigation[i].AccessibleDescription=(navigation[i].Selected?"現在の画面。":"画面へ移動。")+"Alt+"+(i+1);navigation[i].Invalidate();}if(workspace.SelectedIndex==7)RefreshGuide();ArrangeHarbor();((ScrollableControl)navigation[workspace.SelectedIndex].Parent).ScrollControlIntoView(navigation[workspace.SelectedIndex]);
     }
+    void FitRecentLogScroll()
+    {
+        if(recentLogs==null||recentLogs.ClientSize.Height<1)return;int width=Math.Max(40,recentLogs.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-6);int height=TextRenderer.MeasureText(recentLogs.Text,recentLogs.Font,new Size(width,int.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPrefix).Height;var bars=height>recentLogs.ClientSize.Height?ScrollBars.Vertical:ScrollBars.None;if(recentLogs.ScrollBars!=bars)recentLogs.ScrollBars=bars;
+    }
     void RefreshRecentLogs()
     {
         if(recentLogs==null)return;string value=logRecords.Count==0?"まだログはありません。起動や接続の記録がここに表示されます。":string.Join(Environment.NewLine,logRecords.Skip(Math.Max(0,logRecords.Count-10)));
-        if(recentLogs.Text==value)return;recentLogs.Text=value;recentLogs.SelectionStart=recentLogs.TextLength;recentLogs.ScrollToCaret();
+        if(recentLogs.Text==value)return;recentLogs.Text=value;FitRecentLogScroll();recentLogs.SelectionStart=recentLogs.TextLength;recentLogs.ScrollToCaret();
     }
     void RefreshDashboardPresentation(bool sr,bool tr)
     {
