@@ -25,6 +25,14 @@ partial class CraftHarbor
         if(page==0){Require(heapPreview.Height>=heapPreview.Font.Height,"memory summary readable: "+LayoutTrace(heapPreview));Require(hostingSummary.Height>=hostingSummary.Font.Height,"provider summary readable: "+LayoutTrace(hostingSummary));}
         Require(dashboardTitle.Height>=dashboardTitle.Font.Height,"page title fits: "+LayoutTrace(dashboardTitle));
     }
+    void CaptureNativeReview(string name)
+    {
+        // This only runs in the isolated Windows CI fixture. No local desktop is used.
+        try{
+            SetReviewWindowPos(Handle,IntPtr.Zero,0,0,1024,720,0x44);Activate();Refresh();Application.DoEvents();
+            using(var bitmap=new Bitmap(Width,Height))using(var graphics=Graphics.FromImage(bitmap)){graphics.CopyFromScreen(Location,Point.Empty,Size);bitmap.Save(Path.Combine(root,name),System.Drawing.Imaging.ImageFormat.Png);}
+        }catch(Exception error){File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"Native desktop capture unavailable: "+error.GetType().Name+"\n");}
+    }
     void CheckHarborScreens()
     {
         Require(HarborTheme.Lighthouse!=null&&HarborTheme.Harbor!=null,"promotional artwork embedded");
@@ -59,7 +67,7 @@ partial class CraftHarbor
         Require(history.Legends[0].Font.SizeInPoints>=13.9f,"large text includes chart legend");
         Require(navigation.All(b=>b.ForeColor==Color.White),"high contrast navigation");
         Require(Descendants(this).Where(c=>c is Button||c is Label||c is TextBox||c is ComboBox).All(c=>c.Font.SizeInPoints>=12),"12pt floor retained");
-        workspace.SelectedIndex=0;workspace.TabPages[0].ScrollControlIntoView(historyAndLogs);Application.DoEvents();CaptureGenericCheck(this,"ui-harbor-contrast-history.png",0);
+        workspace.SelectedIndex=0;workspace.TabPages[0].ScrollControlIntoView(historyAndLogs);Application.DoEvents();Refresh();Application.DoEvents();CaptureGenericCheck(this,"ui-harbor-contrast-history.png",0);CaptureNativeReview("ui-harbor-native-contrast-history.png");
         File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"High contrast dialogs\n");OpenServersDialog(true);HostingSettings(true);ShowPackImport(this,root,"",true);
         foreach(var name in new[]{"ui-servers","ui-hosting","ui-import"})File.Copy(Path.Combine(root,name+".png"),Path.Combine(root,name+"-contrast.png"),true);
         largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();SetReviewSize(new Size(1360,960));
@@ -69,7 +77,7 @@ partial class CraftHarbor
         connectionStatus="接続先の取得に失敗しました";ApplyDiscoveredAddresses();Require(hostingSummary.Text.Contains("失敗"),"public error remains visible");
         RefreshDashboardPresentation(false,false);UpdateFeatures(false,false);Require(cpuValue.Text=="—"&&tpsValue.Text=="—"&&history.Titles["state"].Text.Contains("最後"),"stopped metrics and historical data labeled");
         workspace.SelectedIndex=0;ArrangeHarbor();workspace.TabPages[0].ScrollControlIntoView(historyAndLogs);Application.DoEvents();CaptureGenericCheck(this,"ui-harbor-history.png",0);
-        MinimumSize=new Size(1024,720);
+        MinimumSize=new Size(1024,720);SetReviewSize(new Size(1024,720));workspace.TabPages[0].AutoScrollPosition=Point.Empty;CaptureNativeReview("ui-harbor-native-1024.png");
         File.WriteAllText(Path.Combine(root,"harbor-review-verification.txt"),"PASS: exact-size native captures; navigation routing; startup/saving/failed/empty states; whitelist layout; embedded artwork; 9-page normal/narrow and enlarged/high-contrast rendering; independent server/tunnel controls for all four providers; provider-specific display; recent-log empty state/shared buffer/filter independence; 12pt minimum and enlarged chart legend. Captures are synthetic native WinForms controls, not real Minecraft/tunnel processes. Physical high-DPI monitors, native screen-reader output, foreground keystroke delivery and interactive OS title-bar transitions were not exercised.");
     }
 }

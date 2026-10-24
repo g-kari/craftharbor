@@ -70,6 +70,7 @@ partial class CraftHarbor
         status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
         status.Controls.Add(StatusColumn(serverState,new[]{start,stop},heapPreview),0,0);
         hostingSummary=new Label{Dock=DockStyle.Fill,ForeColor=Muted,Margin=Padding.Empty,AutoEllipsis=true,Text=HostingName+" / 接続先を確認中"};
+        heapPreview.TextChanged+=delegate{tips.SetToolTip(heapPreview,heapPreview.Text);};hostingSummary.TextChanged+=delegate{tips.SetToolTip(hostingSummary,hostingSummary.Text);};
         connect.Text="開始";disconnect.Text="停止";publicSettings.Text="設定";
         status.Controls.Add(StatusColumn(tunnelState,new[]{connect,disconnect,publicSettings},hostingSummary),1,0);dashboardRows.Controls.Add(status,0,0);((ActionButton)start).Primary=true;
         var join=new SurfaceTable{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,BackColor=Card,Padding=new Padding(12,8,12,8),Margin=new Padding(0,0,4,10)};
@@ -141,7 +142,7 @@ partial class CraftHarbor
     void OpenHostingAccount(){if(hosting.Provider=="playit")Open(claimUrl.Length>0?claimUrl:"https://playit.gg/account");else if(hosting.Provider=="ngrok")Open("https://dashboard.ngrok.com/");else HostingSettings();}
     void ApplyHarborContrast()
     {
-        bool contrast=highContrast.Checked;foreach(var grid in Descendants(this).OfType<DataGridView>()){grid.BackgroundColor=contrast?Color.Black:Card;grid.DefaultCellStyle.BackColor=contrast?Color.Black:Bg;grid.DefaultCellStyle.ForeColor=contrast?Color.White:Ink;grid.DefaultCellStyle.SelectionBackColor=contrast?Color.White:HarborTheme.Primary;grid.DefaultCellStyle.SelectionForeColor=contrast?Color.Black:Ink;grid.ColumnHeadersDefaultCellStyle.BackColor=contrast?Color.Black:Card;grid.ColumnHeadersDefaultCellStyle.ForeColor=contrast?Color.White:Ink;}
+        bool contrast=highContrast.Checked;foreach(var grid in Descendants(this).OfType<DataGridView>()){grid.ColumnHeadersHeight=Math.Max(36,grid.Font.Height+12);grid.BackgroundColor=contrast?Color.Black:Card;grid.DefaultCellStyle.BackColor=contrast?Color.Black:Bg;grid.DefaultCellStyle.ForeColor=contrast?Color.White:Ink;grid.DefaultCellStyle.SelectionBackColor=contrast?Color.White:HarborTheme.Primary;grid.DefaultCellStyle.SelectionForeColor=contrast?Color.Black:Ink;grid.ColumnHeadersDefaultCellStyle.BackColor=contrast?Color.Black:Card;grid.ColumnHeadersDefaultCellStyle.ForeColor=contrast?Color.White:Ink;}
         float factor=largeText.Checked?1.16f:1;var font=new Font("Yu Gothic UI",12*factor);foreach(var area in history.ChartAreas){area.AxisX.LabelStyle.Font=area.AxisY.LabelStyle.Font=area.AxisY2.LabelStyle.Font=font;area.AxisY.TitleFont=area.AxisY2.TitleFont=font;area.AxisX.LineColor=area.AxisY.LineColor=area.AxisY2.LineColor=contrast?Color.White:Muted;area.AxisY.MajorGrid.LineColor=contrast?Color.Gray:HarborTheme.Border;area.AxisY.TitleForeColor=contrast?Color.White:HarborTheme.Live;area.AxisY2.TitleForeColor=contrast?Color.White:HarborTheme.Blue;}
         foreach(var legend in history.Legends){legend.Font=font;legend.BackColor=contrast?Color.Black:Card;}foreach(var title in history.Titles)title.Font=font;
         history.Series[0].Color=contrast?Color.White:HarborTheme.Live;history.Series[1].Color=contrast?Color.Yellow:HarborTheme.Blue;
