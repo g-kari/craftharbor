@@ -67,10 +67,10 @@ jobs:
             dist/release-manifest.json
             dist/core-check-report.txt
             dist/java-verification.txt
-            dist/setup.exe
-            dist/setup.exe.sha256
-            dist/uninstall.exe
-            dist/uninstall.exe.sha256
+            dist/CraftHarbor-Setup-0.4.0-preview.exe
+            dist/CraftHarbor-Setup-0.4.0-preview.exe.sha256
+            dist/CraftHarbor-Uninstall-0.4.0-preview.exe
+            dist/CraftHarbor-Uninstall-0.4.0-preview.exe.sha256
             work/integration-*/host-verification.txt
             work/integration-*/pack-check/pack-verification.txt
             work/installer-check-*/installer-verification.txt

@@ -20,7 +20,7 @@ powershell -File tools/check-integrations.ps1
 
 チェックは合成データを使用します。Minecraftや外部サービスへの実接続を確認した場合は、環境・範囲・結果を分けて記載してください。稼働中のサーバーや本物のワールドで破壊的な試験をしないでください。
 
-インストーラーはInno Setup 6.7以降で生成します。`tools/install-inno.ps1`は固定ハッシュ・Authenticode署名を検証した公式コンパイラーを`work/tools/inno`へこのユーザー用に導入します。`tools/build-installer.ps1 -CompilerPath .../ISCC.exe`で`setup.exe`とインストール版用の`uninstall.exe`を生成します。`tools/check-installer.ps1`は既存インストールや同名ショートカットがある場合は停止し、ない場合に限って作業用フォルダーへ試験インストールし、ワールドと設定が残ることを確認してアンインストールします。
+インストーラーはInno Setup 6.7以降で生成します。`tools/install-inno.ps1`は固定ハッシュ・Authenticode署名を検証した公式コンパイラーを`work/tools/inno`へこのユーザー用に導入します。`tools/build-installer.ps1 -CompilerPath .../ISCC.exe`で`CraftHarbor-Setup-<版>.exe`とインストール版用の`CraftHarbor-Uninstall-<版>.exe`（インストール先では`CraftHarbor-Uninstall.exe`）を生成します。`tools/check-installer.ps1`は既存インストールや同名ショートカットがある場合は停止し、ない場合に限って作業用フォルダーへ試験インストールし、ワールドと設定が残ることを確認してアンインストールします。
 
 ## Pull requests
 

@@ -31,8 +31,10 @@ def checked_files():
     if manifest["source_commit"] != source or manifest["version"] != version:
         raise RuntimeError("Artifact does not belong to this workflow commit/version")
     archive = "CraftHarbor-" + version + "-windows-x64.zip"
-    expected = {archive, archive + ".sha256", "setup.exe", "setup.exe.sha256",
-                "uninstall.exe", "uninstall.exe.sha256"}
+    setup = "CraftHarbor-Setup-" + version + ".exe"
+    uninstall = "CraftHarbor-Uninstall-" + version + ".exe"
+    expected = {archive, archive + ".sha256", setup, setup + ".sha256",
+                uninstall, uninstall + ".sha256"}
     entries = manifest["assets"]
     if len(entries) != 6 or {x["name"] for x in entries} != expected:
         raise RuntimeError("Unexpected asset allowlist")

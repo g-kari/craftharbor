@@ -12,13 +12,13 @@
 [デザインの変更前後](https://github.com/g-kari/craftharbor/blob/v0.4.0-preview/docs/UI_COMPARISON.md) · [検証範囲](https://github.com/g-kari/craftharbor/blob/v0.4.0-preview/docs/UI_VERIFICATION.md)
 
 ## ダウンロード
-- **setup.exe**：通常はこちら。Windows x64向け、ユーザー単位でインストールします。
+- **CraftHarbor-Setup-0.4.0-preview.exe**：通常はこちら。Windows x64向け、ユーザー単位でインストールします。
 - **CraftHarbor-0.4.0-preview-windows-x64.zip**：ポータブル版。
-- **uninstall.exe**：インストール版用の削除ランチャー。setupにも含まれます。
+- **CraftHarbor-Uninstall-0.4.0-preview.exe**：インストール版用の削除ランチャー。setupにも含まれ、インストール先では `CraftHarbor-Uninstall.exe` という名前になります。
 - 各ファイルの **.sha256**：配布ファイルの照合用です。
 
 ## 更新
-アプリ本体・常駐ホストを更新する前に「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じてください。その後setup.exeを実行します。ワールド・既存設定・バックアップは保持します。
+アプリ本体・常駐ホストを更新する前に「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じてください。その後CraftHarbor-Setup-0.4.0-preview.exeを実行します。ワールド・既存設定・バックアップは保持します。
 
 ## 検証と制限
 GitHub-hosted Windows CIでビルド、コアチェック、常駐ホストへの再接続、MODパック/音声設定、Java 17、UIの3構成、setup/uninstallとデータ保持を検証しています。画面検証は隔離した合成データです。実Minecraftへのログイン、実機の高DPI切替、スクリーンリーダーは今回未検証です。

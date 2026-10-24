@@ -17,7 +17,7 @@ SetupIconFile=..\dist\icons\craftharbor.ico
 UninstallDisplayIcon={app}\CraftHarbor.exe
 LicenseFile=..\LICENSE
 OutputDir=..\dist
-OutputBaseFilename=setup
+OutputBaseFilename=CraftHarbor-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 CloseApplications=no
@@ -37,10 +37,14 @@ DialogFontSize=12
 [Tasks]
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する"; Flags: unchecked
 
+[InstallDelete]
+; Remove only the obsolete launcher owned by older CraftHarbor installations.
+Type: files; Name: "{app}\uninstall.exe"
+
 [Files]
 Source: "..\dist\CraftHarbor.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\CraftHarbor.Host.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\dist\uninstall.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\CraftHarbor-Uninstall-{#AppVersion}.exe"; DestDir: "{app}"; DestName: "CraftHarbor-Uninstall.exe"; Flags: ignoreversion
 Source: "..\dist\icons\craftharbor.ico"; DestDir: "{app}\icons"; Flags: ignoreversion
 Source: "..\dist\recipes\server-packs.json"; DestDir: "{app}\recipes"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion

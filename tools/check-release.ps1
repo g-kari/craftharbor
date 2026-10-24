@@ -5,12 +5,14 @@ $request=Get-Content -LiteralPath (Join-Path $repoRoot 'release.json') -Raw | Co
 $version=[string]$request.version
 if($version -notmatch '^\d+\.\d+\.\d+(-[a-z0-9.-]+)?$'){throw 'Invalid release version.'}
 $numericVersion=($version.Split('-')[0])+'.0'
-foreach($name in @('CraftHarbor.exe','CraftHarbor.Host.exe','setup.exe','uninstall.exe')){
+$setupName="CraftHarbor-Setup-$version.exe"
+$uninstallName="CraftHarbor-Uninstall-$version.exe"
+foreach($name in @('CraftHarbor.exe','CraftHarbor.Host.exe',$setupName,$uninstallName)){
  $info=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $dist $name))
  if($info.FileVersion -ne $numericVersion){throw "Version mismatch in $name : $($info.FileVersion), expected $numericVersion"}
 }
 $archive="CraftHarbor-$version-windows-x64.zip"
-$names=@($archive,($archive+'.sha256'),'setup.exe','setup.exe.sha256','uninstall.exe','uninstall.exe.sha256')
+$names=@($archive,($archive+'.sha256'),$setupName,($setupName+'.sha256'),$uninstallName,($uninstallName+'.sha256'))
 $assets=@()
 foreach($name in $names){
  $path=Join-Path $dist $name
