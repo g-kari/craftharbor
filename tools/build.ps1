@@ -19,4 +19,8 @@ Copy-Item -LiteralPath (Join-Path $repoRoot 'recipes\server-packs.json') -Destin
 foreach ($name in @('README.md','LICENSE','PRIVACY.md','CODE_SIGNING_POLICY.md')) {
     Copy-Item -LiteralPath (Join-Path $repoRoot $name) -Destination (Join-Path $dist $name) -Force
 }
+New-Item -ItemType Directory -Path (Join-Path $dist 'docs') -Force | Out-Null
+foreach($name in @('PERFORMANCE.md','PROFILES.md','DESIGN.md','RELEASE_NOTES.md','SIGNPATH.md')){
+    Copy-Item -LiteralPath (Join-Path $repoRoot ('docs\'+$name)) -Destination (Join-Path $dist ('docs\'+$name)) -Force
+}
 Write-Output "Built $dist\CraftHarbor.exe. This build is unsigned."

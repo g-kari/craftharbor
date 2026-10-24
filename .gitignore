@@ -29,6 +29,10 @@ core-check-report.txt
 bin/
 obj/
 connection-settings.json
+java-options.json
+java-options.json.bak
+performance-settings.json
+performance-settings.json.bak
 import-info.json
 .craftharbor-runtime/
 node_modules/

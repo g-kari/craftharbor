@@ -25,6 +25,6 @@ partial class CraftHarbor
     }
     void ApplyVoiceAutomatically()
     {
-        if(!hosting.AutoVoice||Running(server))return;if(hosting.VoiceAddresses==null)hosting.VoiceAddresses=new Dictionary<string,string>();var endpoints=DetectVoice();foreach(var item in endpoints){string address;if(!hosting.VoiceAddresses.TryGetValue(item.Port.ToString(),out address)){if(endpoints.Select(v=>v.Port).Distinct().Count()!=1)continue;address=hosting.VoiceAddress;}if(WriteVoiceAddress(item,address))Add("[音声] "+item.Name+"のUDP "+item.Port+"に対応する公開先を自動反映しました。");}
+        if(!hosting.AutoVoice||Running(server)||preparingServer||backupBusy)return;if(hosting.VoiceAddresses==null)hosting.VoiceAddresses=new Dictionary<string,string>();var endpoints=DetectVoice();if(endpoints.Count==0)return;try{EnsureStopped();}catch(System.Net.Sockets.SocketException){return;}foreach(var item in endpoints){string address;if(!hosting.VoiceAddresses.TryGetValue(item.Port.ToString(),out address)){if(endpoints.Select(v=>v.Port).Distinct().Count()!=1)continue;address=hosting.VoiceAddress;}if(WriteVoiceAddress(item,address))Add("[音声] "+item.Name+"のUDP "+item.Port+"に対応する公開先を自動反映しました。");}
     }
 }

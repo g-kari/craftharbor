@@ -30,6 +30,10 @@ UninstallDisplayName=CraftHarbor
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[LangOptions]
+DialogFontName=Yu Gothic UI
+DialogFontSize=12
+
 [Tasks]
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する"; Flags: unchecked
 
@@ -43,6 +47,11 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PRIVACY.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\CODE_SIGNING_POLICY.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\docs\PERFORMANCE.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\PROFILES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\DESIGN.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\RELEASE_NOTES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\SIGNPATH.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\CraftHarbor"; Filename: "{app}\CraftHarbor.exe"
