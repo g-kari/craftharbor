@@ -26,7 +26,7 @@ partial class CraftHarbor : Form
     NumericUpDown memory;
     Button start, stop, connect, disconnect, backup;
     System.Windows.Forms.Timer timer;
-    static readonly Color Bg = Color.FromArgb(18,23,33), Card = Color.FromArgb(28,35,48), Ink = Color.FromArgb(232,237,245), Muted = Color.FromArgb(155,170,189), Accent = Color.FromArgb(111,218,192);
+    static readonly Color Bg = Color.FromArgb(16,25,35), Card = Color.FromArgb(28,41,54), Ink = Color.FromArgb(236,243,246), Muted = Color.FromArgb(175,190,204), Accent = Color.FromArgb(133,229,206);
     string ServerDir { get { return Path.Combine(root,"server"); } }
     string PlayitDir { get { return Path.Combine(root,"playit"); } }
     string Settings { get { return Path.Combine(root,"manager-settings.txt"); } }
@@ -40,6 +40,12 @@ partial class CraftHarbor : Form
     }
     [STAThread] static int Main(string[] args)
     {
+#if HOST_BINARY
+        return PersistentHostMain(args);
+#else
+        if(args.Length>0&&args[0]=="--host-check")return HostCheck(args);
+        if(args.Length>0&&args[0]=="--pack-check")return PackCheck(args);
+        if(args.Length>0&&args[0]=="--pack-download-check")return PackDownloadCheck(args);
         if(args.Length>0&&args[0]=="--core-check")return CoreChecks();
         if(!InitializeWorkspace(args))return 1;
         if(Array.IndexOf(args,"--experience-check")>=0)ManagerDataOverride=Path.Combine(WorkspaceRoot,".manager-check-data");
@@ -55,14 +61,16 @@ partial class CraftHarbor : Form
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ThreadException += delegate(object s, ThreadExceptionEventArgs e) { MessageBox.Show(e.Exception.Message,"操作できませんでした"); };
             var manager = new CraftHarbor();
+            if(Array.IndexOf(args,"--start-server")>=0)manager.Shown+=delegate{try{manager.StartServer();}catch(Exception e){manager.Add("[起動エラー] "+e.Message);}};
             if (Array.IndexOf(args,"--connect") >= 0) manager.Shown += delegate { try { manager.StartTunnel(); } catch(Exception e) { manager.Add("[playitエラー] "+e.Message); } };
             Application.Run(manager);
         }
         return 0;
+#endif
     }
     public CraftHarbor()
     {
-        LoadProfile();
+        LoadProfile();LoadHosting();
         AutoScaleMode=AutoScaleMode.Dpi;
         Text = "CraftHarbor — "+profile.Name;
         string iconFile=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"icons","craftharbor.ico");if(File.Exists(iconFile))Icon=new Icon(iconFile);
@@ -88,13 +96,13 @@ partial class CraftHarbor : Form
         tunnelState = LabelAt(publicPanel,"playit.gg：停止中",16,12,16);
         start=Btn(local,"サーバー起動",16,52,145,delegate { StartServer(); });
         stop=Btn(local,"保存して停止",170,52,145,delegate { StopServer(); });
-        memory = new NumericUpDown { Location=new Point(330,57), Width=58, Minimum=4,Maximum=24,Value=6, BackColor=Bg,ForeColor=Ink };
+        memory = new HarborNumber { Location=new Point(330,57), Width=58, Minimum=4,Maximum=24,Value=6, BackColor=Bg,ForeColor=Ink };
         local.Controls.Add(memory); LabelAt(local,"GB",390,58,10);
         connect=Btn(publicPanel,"接続を開始",16,52,135,delegate { StartTunnel(); });
         disconnect=Btn(publicPanel,"接続を停止",160,52,135,delegate { StopTunnel(); });
-        Btn(publicPanel,"設定ページ",304,52,135,delegate { Open("https://playit.gg/account/tunnels"); });
+        Btn(publicPanel,"設定ページ",304,52,135,delegate { HostingSettings(); });
         outer.Controls.Add(cards,0,1);
-        var join = new Panel { Dock=DockStyle.Fill, BackColor=Card, Margin=new Padding(0,6,0,6) };
+        var join = new SurfacePanel { Dock=DockStyle.Fill, BackColor=Card, Margin=new Padding(0,6,0,6) };
         LabelAt(join,"友達に渡す接続先",16,8,10);
         var joinRow=new TableLayoutPanel { Dock=DockStyle.Bottom,Height=48,Padding=new Padding(16,0,16,8),ColumnCount=4,RowCount=1 };
         joinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));joinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,95));joinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,85));joinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,155));
@@ -132,13 +140,14 @@ partial class CraftHarbor : Form
         UpgradeExperience(outer,cards,join,heading,tools,allow);
         LoadSettings();
         LoadFeatureSettings();
+        AttachPersistentHost();
         timer=new System.Windows.Forms.Timer { Interval=400 };timer.Tick+=delegate { TickState(); };timer.Start();
         FormClosing+=OnClosing;
         Add("[案内] ①サーバー起動 → ②参加ユーザーを許可 → ③接続を開始 → ④playitでMinecraft Javaトンネルを作成。");
         Add("[playit設定] ローカル接続先は 127.0.0.1:"+ServerPort+"。発行された公開アドレスを上に保存してください。");
         Add("[案内] バックアップはサーバー停止中に作成します。管理アプリを閉じると、ワールドを保存して停止します。");
     }
-    Panel PanelCard() { return new Panel { Dock=DockStyle.Fill,BackColor=Card,Margin=new Padding(0,0,8,8) }; }
+    Panel PanelCard() { return new SurfacePanel { Dock=DockStyle.Fill,BackColor=Card,Margin=new Padding(0,0,10,8) }; }
     Label LabelAt(Control p,string text,int x,int y,int size) { var l=new Label { Text=text,Location=new Point(x,y),AutoSize=true,Font=new Font("Yu Gothic UI",size),ForeColor=Ink };p.Controls.Add(l);return l; }
     Button Btn(Control p,string text,int x,int y,int w,Action action) { var b=new ActionButton { Text=text,Location=new Point(x,y),Size=new Size(w,40),FlatStyle=FlatStyle.Flat,BackColor=Card,ForeColor=Ink };b.FlatAppearance.BorderColor=Color.FromArgb(65,82,103);b.Click+=delegate { try { action(); } catch(Exception e) { Add("[エラー] "+e.Message);MessageBox.Show(e.Message,"操作できませんでした"); } };p.Controls.Add(b);return b; }
     Button FlowBtn(Control p,string text,Action action) { var b=Btn(p,text,0,0,Math.Max(132,text.Length*16+58),action);b.Margin=new Padding(0,0,8,0);return b; }
@@ -151,7 +160,7 @@ partial class CraftHarbor : Form
         var p=new Process { StartInfo=new ProcessStartInfo(exe,args) { WorkingDirectory=cwd,UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8 } };
         DataReceivedEventHandler handler=delegate(object s,DataReceivedEventArgs e) { if(e.Data==null)return;string line=Regex.Replace(e.Data,@"\x1B\[[0-?]*[ -/]*[@-~]","");if(label=="MC" && line.Contains("Done (") && line.Contains("For help"))ready=true;
             line=Regex.Replace(line,"§.","");
-            if(label=="MC") ParseServerMetrics(line);
+            if(label=="MC") ParseServerMetrics(line);if(label=="ngrok"){var publicUrl=Regex.Match(line,@"tcp://([A-Za-z0-9.-]+:\d+)");if(publicUrl.Success)BeginInvoke((Action)delegate{address.Text=publicUrl.Groups[1].Value;SaveSettings();RefreshGuide();});}
             if(label=="playit") { var m=Regex.Match(line,@"https://playit\.gg/claim/[a-zA-Z0-9_-]+");if(m.Success)claimUrl=m.Value; }
             Add("["+label+"] "+line); };
         p.OutputDataReceived+=handler;p.ErrorDataReceived+=handler;
@@ -159,13 +168,13 @@ partial class CraftHarbor : Form
     }
     void StartServer()
     {
-        if(Running(server)||backupBusy)return;
+        if(Running(server)||backupBusy)return;ApplyVoiceAutomatically();
         using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
         string launchTarget=LaunchTarget();
         ready=false;stopping=false;SaveSettings();
         using(var memoryGate=new Mutex(false,"Local\\CraftHarborMemoryReservations")){
             if(!memoryGate.WaitOne(5000))throw new Exception("他のサーバーのメモリ割当処理を待っています。もう一度お試しください。");
-            try{int heap=ResolveHeapBudget();server=Launch(JavaPath(),"-Dfile.encoding=UTF-8 -Xms4G -Xmx"+heap+"G "+launchTarget,ServerDir,"MC");activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{server.StandardInput.WriteLine("stop");server.StandardInput.Flush();throw;}
+            try{int heap=ResolveHeapBudget();server=LaunchPersistent("server",JavaPath(),"-Dfile.encoding=UTF-8 -Xms4G -Xmx"+heap+"G "+launchTarget,ServerDir,heap);activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{HostCall(new HostRequest{Action="command",Text="stop"});throw;}
                 Add("[メモリ] "+(autoMemory.Checked?"自動・登録サーバー "+RegisteredCount()+"台":"手動")+"：最大 "+heap+" GiB / 初期 4 GiB。必要に応じてJVMが拡張します。");
             }finally{memoryGate.ReleaseMutex();}
         }
@@ -173,14 +182,9 @@ partial class CraftHarbor : Form
         Add("[管理] サーバーを起動しています。初回は数分かかる場合があります。");
     }
     void StopServer() { if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
-    void StartTunnel()
-    {
-        if(Running(tunnel))return;
-        tunnel=Launch(Path.Combine(PlayitDir,"playit-0.17.1.exe"),"--stdout --secret_path "+Q(Path.Combine(PlayitDir,"agent-secret.toml")),PlayitDir,"playit");
-        Add("[管理] 初回はログの https://playit.gg/claim/... を『アカウント連携』ボタンで開きます。");
-    }
-    void StopTunnel() { if(Running(tunnel)) { tunnel.Kill();tunnel.WaitForExit(3000);Add("[管理] playit接続を停止しました。"); } }
-    void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }server.StandardInput.WriteLine(text);server.StandardInput.Flush();Add("> "+text); }
+    void StartTunnel(){StartHosting();}
+    void StopTunnel() { if(Running(tunnel)) { HostCall(new HostRequest{Action="stop-tunnel"});Add("[管理] 公開接続を停止しました。"); } }
+    void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text); }
     void SendCommand() { string s=command.Text.Trim().TrimStart('/');if(s.Length==0)return;if(s=="stop")StopServer();else Send(s);command.Clear(); }
     void AllowPlayer(string op) { string n=player.Text.Trim();if(!Regex.IsMatch(n,@"^[A-Za-z0-9_]{1,16}$"))throw new Exception("Java版ユーザー名を入力してください（英数字と _ 、16文字以内）。");Send("whitelist "+op+" "+n); }
     void Backup()
@@ -193,31 +197,24 @@ partial class CraftHarbor : Form
     }
     void TickState()
     {
-        string s;var sb=new StringBuilder();int count=0;while(count++<400 && queue.TryDequeue(out s))sb.AppendLine(s);
+        PollPersistentHost();string s;var sb=new StringBuilder();int count=0;while(count++<400 && queue.TryDequeue(out s))sb.AppendLine(s);
         if(sb.Length>0) { if(log.TextLength>250000)log.Text=log.Text.Substring(log.TextLength-150000);log.AppendText(sb.ToString()); }
         bool sr=Running(server),tr=Running(tunnel);
         UpdateFeatures(sr,tr);
         serverState.Text="サーバー："+(sr?(stopping?"保存・停止中":ready?"稼働中":"起動中…"):"停止中");
         serverState.ForeColor=sr&&ready?Accent:Ink;
-        tunnelState.Text="playit.gg："+(tr?(File.Exists(Path.Combine(PlayitDir,"agent-secret.toml"))?"実行中（ログを確認）":"アカウント連携待ち"):"停止中");
+        RefreshHosting();ApplyDiscoveredAddresses();tunnelState.Text=HostingName+"："+(tr?"実行中":"停止中");
         start.Enabled=!sr&&!backupBusy&&!closing;stop.Enabled=sr&&!stopping;connect.Enabled=!tr&&!closing;disconnect.Enabled=tr;backup.Enabled=!sr&&!backupBusy&&!closing;memory.Enabled=!sr&&!autoMemory.Checked;
         if(stopping && sr && (DateTime.UtcNow-stopAt).TotalSeconds>120) detail.Text="停止に時間がかかっています。保存中の可能性があるため、そのまま待機しています。";
-        if(closing&&!sr&&!backupBusy&&DiscordDrainedForExit()) { quitting=true;Close(); }
+        if(closing&&!backupBusy&&DiscordDrainedForExit()) { quitting=true;Close(); }
     }
     void OnClosing(object sender,FormClosingEventArgs e)
     {
-        if(quitting)return;
-        SaveSettings();
-        if(backupBusy) { e.Cancel=true;MessageBox.Show("バックアップ完了後に閉じてください。");return; }
-        if(Running(server))
-        {
-            e.Cancel=true;
-            if(closing)return;
-            if(MessageBox.Show("ワールドを保存してサーバーとplayit接続を停止します。","終了",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;
-            closing=true;StopTunnel();StopServer();return;
-        }
-        if(!DiscordDrainedForExit()){e.Cancel=true;closing=true;StopTunnel();Add("[Discord] 送信完了を待ってから終了します。");return;}
-        StopTunnel();timer.Stop();
+        if(quitting)return;SaveSettings();
+        if(backupBusy){e.Cancel=true;MessageBox.Show("バックアップ完了後に閉じてください。");return;}
+        if(!DiscordDrainedForExit()){e.Cancel=true;closing=true;Add("[Discord] 送信完了を待ってから画面を閉じます。サーバーは稼働を続けます。");return;}
+        timer.Stop();
+        if(persistentAttached&&!Running(server)&&!Running(tunnel))try{HostCall(new HostRequest{Action="shutdown-idle"});}catch(Exception){}
     }
     static int SelfTest()
     {
@@ -228,14 +225,14 @@ partial class CraftHarbor : Form
             p.Start();string v=p.StandardError.ReadToEnd();p.WaitForExit();if(p.ExitCode!=0||!v.Contains("version"))throw new Exception("Java runtime unavailable: "+v);
             var manager=new CraftHarbor();manager.CreateControl();manager.RunFeatureChecks();if(manager.FtbBackupsAvailable){manager.backupHours.Value=2;manager.backupKeep.Value=7;manager.ApplyAutoBackup();}manager.StartServer();
             DateTime deadline=DateTime.UtcNow.AddMinutes(7);
-            while(!manager.ready&&Running(manager.server)&&DateTime.UtcNow<deadline)Thread.Sleep(500);
+            while(!manager.ready&&Running(manager.server)&&DateTime.UtcNow<deadline){manager.PollPersistentHost(true);Thread.Sleep(500);}
             bool success=manager.ready;
             bool metricsOk=false;string metrics="";
-            if(success){manager.UpdateFeatures(true,false);DateTime metricDeadline=DateTime.UtcNow.AddSeconds(35);while(manager.SparkAvailable&&DateTime.UtcNow<metricDeadline&&(double.IsNaN(manager.tps)||double.IsNaN(manager.mspt))){Thread.Sleep(500);manager.UpdateFeatures(true,false);}metricsOk=manager.ramGiB>0&&(!manager.SparkAvailable||(!double.IsNaN(manager.tps)&&!double.IsNaN(manager.mspt)));metrics="TPS="+manager.tps+", MSPT="+manager.mspt+", process RAM GiB="+manager.ramGiB+", CPU="+manager.cpuPercent+", players="+manager.onlineCount;}
-            if(Running(manager.server)){manager.StopServer();if(!manager.server.WaitForExit(120000))throw new Exception("Graceful stop timed out");manager.server.WaitForExit();}
+            if(success){manager.UpdateFeatures(true,false);DateTime metricDeadline=DateTime.UtcNow.AddSeconds(35);while(manager.SparkAvailable&&DateTime.UtcNow<metricDeadline&&(double.IsNaN(manager.tps)||double.IsNaN(manager.mspt))){Thread.Sleep(500);manager.PollPersistentHost(true);manager.UpdateFeatures(true,false);}metricsOk=manager.ramGiB>0&&(!manager.SparkAvailable||(!double.IsNaN(manager.tps)&&!double.IsNaN(manager.mspt)));metrics="TPS="+manager.tps+", MSPT="+manager.mspt+", process RAM GiB="+manager.ramGiB+", CPU="+manager.cpuPercent+", players="+manager.onlineCount;}
+            if(Running(manager.server)){manager.StopServer();if(!manager.server.WaitForExit(120000))throw new Exception("Graceful stop timed out");manager.server.WaitForExit();manager.PollPersistentHost(true);}
             var sb=new StringBuilder();string line;while(manager.queue.TryDequeue(out line))sb.AppendLine(line);File.WriteAllText(Path.Combine(root,"verification-server.log"),sb.ToString());
             if(!success)throw new Exception("Server did not become ready; see verification-server.log");
-            if(manager.server.ExitCode!=0)throw new Exception("Server exit code: "+manager.server.ExitCode);
+            if(manager.serverExitCode!=0)throw new Exception("Server exit code: "+manager.serverExitCode);
             if(!metricsOk)throw new Exception("Live metrics not acquired: "+metrics+"; see verification-server.log");
             File.WriteAllText(report,"PASS: Java runtime; all manager tabs created; actual server reached Done; graceful stop completed.\r\nPASS: live "+metrics+"\r\nPASS: backup extraction verified and traversal rejected; settings read; MOD and player lists loaded.\r\n"+DateTime.Now.ToString("s"));manager.timer.Stop();manager.Dispose();return 0;
         }

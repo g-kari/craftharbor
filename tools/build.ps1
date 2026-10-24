@@ -10,7 +10,12 @@ $compilerArgs = @('/nologo','/target:winexe','/platform:x64',('/win32icon:'+(Joi
  '/reference:System.Windows.Forms.DataVisualization.dll','/reference:System.Web.Extensions.dll','/reference:System.Security.dll') + $sourcePaths
 & $compiler @compilerArgs
 if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }
+$hostArgs=@('/define:HOST_BINARY',('/out:'+(Join-Path $dist 'CraftHarbor.Host.exe')))+@($compilerArgs | Where-Object { $_ -notlike '/out:*' })
+& $compiler @hostArgs
+if($LASTEXITCODE -ne 0){throw 'Persistent host compilation failed.'}
 Copy-Item -LiteralPath (Join-Path $repoRoot 'assets\craftharbor.ico') -Destination (Join-Path $dist 'icons\craftharbor.ico') -Force
+New-Item -ItemType Directory -Path (Join-Path $dist 'recipes') -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repoRoot 'recipes\server-packs.json') -Destination (Join-Path $dist 'recipes\server-packs.json') -Force
 foreach ($name in @('README.md','LICENSE','PRIVACY.md','CODE_SIGNING_POLICY.md')) {
     Copy-Item -LiteralPath (Join-Path $repoRoot $name) -Destination (Join-Path $dist $name) -Force
 }

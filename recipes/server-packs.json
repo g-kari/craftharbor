@@ -1,0 +1,18 @@
+[
+  {
+    "Name": "Create: Astral",
+    "Version": "2.1.5b",
+    "Url": "https://github.com/Laskyyy/Create-Astral/releases/download/v2.1.5b/Create-Astral-Server-v2.1.5b.zip",
+    "Sha256": "ed646364fa2dfe7d865c47e95b7ef0b31ddc6b74652617d4869d978b2e28791a",
+    "MinecraftVersion": "1.18.2",
+    "JavaMajor": 17,
+    "ClientUrl": "https://www.curseforge.com/minecraft/modpacks/create-astral",
+    "Extras": [
+      {
+        "Url": "https://edge.forgecdn.net/files/4332/470/vinery-1.1.4.jar",
+        "Path": "mods/vinery-1.1.4.jar",
+        "Sha256": "d274888822921f306ca84d904a9f14c8255e0c09384fe7cf523a46bb2d93104a"
+      }
+    ]
+  }
+]

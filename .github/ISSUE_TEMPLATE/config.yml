@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security reporting / 脆弱性の報告
+    url: https://github.com/g-kari/craftharbor/blob/main/SECURITY.md
+    about: 秘密情報や脆弱性の詳細を公開Issueへ投稿しないでください。

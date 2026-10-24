@@ -26,7 +26,9 @@ partial class CraftHarbor
             string settings=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor","workspace.txt");
             if(File.Exists(settings)){string saved=File.ReadAllText(settings).Trim();if(ValidWorkspace(saved)){WorkspaceRoot=saved;return true;}}
             Application.EnableVisualStyles();
-            MessageBox.Show("導入済みのMinecraft Javaサーバーを『server』フォルダーへ配置し、その親フォルダーを選択してください。\n\nVanilla、Paper、FabricやMODパック等を管理できます。Minecraft・Java・MOD・playitはこの管理アプリに含まれません。","サーバーの保存先を選択");
+            var choice=MessageBox.Show("『はい』: 導入済みサーバーの保存先を選択\n『いいえ』: 配布URLからサーバー用ZIPを追加\n\nMinecraft・Java・MOD・公開接続ツールは別途用意してください。","CraftHarborへようこそ",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Information);
+            if(choice==DialogResult.Cancel)return false;
+            if(choice==DialogResult.No){string imported=ShowPackImport(null,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"CraftHarbor","servers"),"");if(imported==null)return false;WorkspaceRoot=imported;Directory.CreateDirectory(Path.GetDirectoryName(settings));File.WriteAllText(settings,imported,new UTF8Encoding(false));return true;}
             using(var dialog=new FolderBrowserDialog{Description="serverフォルダーが入っているワークスペースを選択",ShowNewFolderButton=false}){
                 if(dialog.ShowDialog()!=DialogResult.OK)return false;
                 if(!ValidWorkspace(dialog.SelectedPath))throw new Exception("serverフォルダーが見つかりません。READMEの構成に合わせて、もう一度起動してください。");

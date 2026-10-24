@@ -27,3 +27,7 @@ core-check-report.txt
 .vs/
 bin/
 obj/
+connection-settings.json
+import-info.json
+.craftharbor-runtime/
+node_modules/

@@ -1,0 +1,30 @@
+name: Bug report / 不具合
+description: 再現手順と環境を報告する
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: '認証情報、Webhook URL、IPアドレス、参加者一覧、ワールド、未編集のログは貼らないでください。脆弱性はSECURITY.mdを確認してください。'
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 環境
+      description: CraftHarbor・Windows・Minecraft・Java・ローダー・MODパックのバージョン
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 再現手順
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior / 期待する動作と実際の動作
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence / 秘密情報を除いた画面・ログ

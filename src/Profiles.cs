@@ -99,6 +99,6 @@ partial class CraftHarbor
         else if(profile.ClientMode=="custom")s.AppendLine().AppendLine("**導入**").AppendLine("必要なMODや設定は、下の導入案内または主催者の指定に合わせてください。");
         else s.AppendLine().AppendLine("**導入**").AppendLine("Minecraft Launcherから指定バージョンのJava版を起動してください。サーバーへの参加用にMODを入れる必要はありません。");
         if(profile.ClientUrl.Length>0)s.AppendLine(profile.ClientUrl);
-        s.AppendLine().AppendLine("**接続方法**").AppendLine("「マルチプレイ」→「サーバーを追加」から下のアドレスを入力。").AppendLine("`"+endpoint+"`").AppendLine().AppendLine("**参加前に**").AppendLine("Java版のユーザー名を主催者へ送って、参加許可の設定を確認してください。").AppendLine("接続用のVPNやplayit.ggのアプリは、参加者側では不要です。").AppendLine().AppendLine("**影MOD**").AppendLine("影の設定は各自のPC側で行います。対応するクライアント構成を主催者に確認し、重い場合はOFFにしてください。").AppendLine().AppendLine("**入れないとき**").AppendLine("バージョン、MOD構成、参加許可、アドレス、サーバーの稼働を確認してください。エラーの文面やスクショを主催者へ送ってね。").AppendLine().AppendLine("※サーバー用PCが稼働している間だけ入れます。稼働時間は主催者の案内を確認してください。");return s.ToString();
+        s.AppendLine().AppendLine("**接続方法**").AppendLine("「マルチプレイ」→「サーバーを追加」から下のアドレスを入力。").AppendLine("`"+endpoint+"`").AppendLine().AppendLine("**参加前に**").AppendLine("Java版のユーザー名を主催者へ送って、参加許可の設定を確認してください。").AppendLine("接続用のVPNやトンネルアプリは、参加者側では不要です。").AppendLine().AppendLine("**影MOD**").AppendLine("影の設定は各自のPC側で行います。対応するクライアント構成を主催者に確認し、重い場合はOFFにしてください。").AppendLine().AppendLine("**入れないとき**").AppendLine("バージョン、MOD構成、参加許可、アドレス、サーバーの稼働を確認してください。エラーの文面やスクショを主催者へ送ってね。").AppendLine().AppendLine("※サーバー用PCが稼働している間だけ入れます。稼働時間は主催者の案内を確認してください。");return s.ToString();
     }
 }

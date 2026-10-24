@@ -18,6 +18,40 @@ SignPathへの申請は行っておらず、現時点では申請を予定して
 - 基本設定、完全バックアップ・復元、同梱FTB Backupsの設定、予約再起動。
 - 左ナビ、文字ラベル付きアイコン、文字拡大、高コントラスト、キーボード操作。
 - Discordへコピーできる参加案内。任意のWebhook通知（初期状態は無効、URLはDPAPI保存）。
+- サーバーと公開接続を独立した常駐プロセスで実行。管理画面を閉じて再度開いても、同じプロセスへ再接続します。
+- 直接ダウンロードURLからのサーバー用ZIP取り込み。SHA-256検証、進捗、中止、入れ子フォルダーの認識、Create: Astralの入力例。
+- playit.gg・ngrok・直接公開・任意のポート開放ツールをサーバーごとに選択。
+
+## インストールと継続運転
+
+`setup.exe`はこのWindowsユーザーの`%LOCALAPPDATA%/Programs/CraftHarbor`へインストールし、スタートメニューへショートカットを追加します。デスクトップへの追加は任意です。管理者権限は不要です。
+
+管理画面を閉じても、`CraftHarbor.Host.exe`がMinecraftサーバーと管理下の公開接続を維持します。サーバーを止めるときは「保存して停止」、トンネルを止めるときは公開接続の「停止」を選んでください。PCのシャットダウン・再起動・スリープをまたいだ継続はできません。予約操作とDiscord通知は管理画面の起動中に実行します。
+
+アプリ本体・常駐プロセスの更新やアンインストール前には、サーバーと公開接続を停止し、管理画面を閉じてください。旧版が直接起動したサーバーを、新方式へ稼働途中に移す機能はありません。
+
+## URLからサーバーを追加
+
+「サーバー一覧」→「URLから追加」で、直接ダウンロードできるHTTPSのサーバー用ZIPと新しい保存先を指定します。Minecraft EULAを確認してチェックするとダウンロード・検証・展開へ進みます。既存の保存先は上書きせず、一時フォルダーで完了してから新規追加します。
+
+CurseForgeの紹介ページURL、クライアント用manifest ZIPや`.mrpack`を直接サーバーへ変換する機能はありません。配布サイトの**Server Pack**を選んでください。Forge/NeoForgeなどは、配布元の初期セットアップが完了したJARまたは`libraries/.../win_args.txt`が必要です。ZIP内のスクリプトは自動実行しません。
+
+Create: Astral 2.1.5bの入力例は公式GitHubのサーバーZIPを固定SHA-256で検証し、不足するVinery 1.1.4を正規配布元から追加検証します。Java 17が必要です。これは入力例であり、ほかのパックも取り込めます。
+
+## 公開方法と音声MOD
+
+ダッシュボードの公開接続の「設定」から選択します。
+
+| 方法 | 主催者側の準備 | 音声UDP |
+|---|---|---|
+| playit.gg | 公式エージェント・連携・トンネル作成。作成済み接続先はAPIで自動取得 | 音声ポートに対応する別トンネルが必要 |
+| ngrok | 公式ngrok.exeと認証設定。TCP利用条件はngrok側を確認 | ngrok TCPでは音声UDPを中継しません |
+| 直接公開 | グローバルに接続できる回線、ルーターのポート転送、必要な待受設定 | UDPも転送 |
+| 外部ポート開放ツール | 利用者が入手した開放くん等のexeを指定。ツールの画面で設定 | ツール・ルーター側で設定 |
+
+ツール起動はポート開放の成功を保証しません。本アプリはWindowsのセキュリティ設定やルーターを自動変更しません。ngrok無料TCPにはカード確認が必要です。[ngrok公式FAQ](https://ngrok.com/faq)
+
+Simple Voice Chat・Plasmo VoiceのMODと設定からUDPポートを検出します。playitで作成済みの対応UDPトンネルをポート別に取得し、自動反映を有効にしている場合は停止中・次回起動前に各MODへ反映します。設定は変更前のコピーを残します。読み取り専用の連携キーではトンネル新規作成はできないため、公式の作成画面を開きます。ゲームのTCPが接続できても音声UDPが接続できるとは限りません。[Simple Voice Chat公式](https://modrepo.de/minecraft/voicechat/wiki/server_setup)、[Plasmo Voice公式](https://plasmovoice.com/docs/server/advanced/)
 
 ## 状態と制限
 
@@ -102,7 +136,7 @@ Alt+1〜9で画面切替、Ctrl+Lでコンソール入力、F1で参加者向け
 
 ## アンインストール
 
-保存してサーバーを停止し、管理アプリを終了してから、アプリの展開フォルダーを削除します。
+「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じます。インストール版は`uninstall.exe`またはWindowsのインストール済みアプリから削除します。ポータブル版はアプリ本体の展開フォルダーを削除します。
 ワールドを残す場合はワークスペースを削除しないでください。
 保存したワークスペース選択情報は`%LOCALAPPDATA%/CraftHarbor/workspace.txt`です。
 旧Astral Server Managerの`workspace.txt`と`servers.json`は、新しい保存先に同名ファイルがない場合だけコピーします。旧版を終了してから更新してください。ワールドやワークスペース内の設定はそのまま利用します。
@@ -115,3 +149,12 @@ Webhook設定は管理アプリの「送信先を解除」で消去できます�
 - [playit agent](https://github.com/playit-cloud/playit-agent)
 - [spark](https://spark.lucko.me/)
 - [Discord webhooks](https://docs.discord.com/developers/resources/webhook)
+
+## 参加・サポート
+
+- [不具合・機能提案](https://github.com/g-kari/craftharbor/issues)
+- [貢献方法](CONTRIBUTING.md)
+- [行動規範](CODE_OF_CONDUCT.md)
+- [セキュリティ報告](SECURITY.md)
+
+メンテナーは[g-kari](https://github.com/g-kari)です。現在は開発プレビューで、全パック・全公開方法の実接続を保証していません。
