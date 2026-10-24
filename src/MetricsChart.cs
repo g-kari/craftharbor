@@ -18,7 +18,16 @@ partial class CraftHarbor
         area.AxisY2.Maximum=8;history.Legends[0].Font=font;
         foreach(var series in history.Series){series.ChartType=SeriesChartType.Line;series.MarkerSize=6;}
         history.Titles.Add(new Title{ Name="state",Text="サーバー起動後にCPU・RAMの実測グラフを表示します",Font=font,ForeColor=Muted,Docking=Docking.Top });
-        SetChartWindow(DateTime.Now);
+        ArrangeMetricChart();history.Resize+=delegate{ArrangeMetricChart();};SetChartWindow(DateTime.Now);
+    }
+    void ArrangeMetricChart()
+    {
+        // Reserve predictable space for 12pt axes; automatic layout can squeeze the plot
+        // to a few pixels once a state title and legend are present.
+        var area=history.ChartAreas[0];area.Position=new ElementPosition(0,24,100,76);
+        area.InnerPlotPosition=new ElementPosition(14,4,72,70);area.AxisY.Interval=25;
+        history.Titles["state"].Position=new ElementPosition(2,0,96,12);
+        history.Legends[0].Position=new ElementPosition(48,12,50,12);history.Legends[0].Alignment=StringAlignment.Far;
     }
     void SetChartWindow(DateTime now)
     {

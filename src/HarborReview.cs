@@ -22,6 +22,7 @@ partial class CraftHarbor
         var form=workspace.TabPages[page].Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
         if(form!=null)form.AutoScrollPosition=Point.Empty;
         ArrangeHarbor();Application.DoEvents();CaptureGenericCheck(this,name,page);
+        if(page==0){Require(heapPreview.Height>=heapPreview.Font.Height,"memory summary readable: "+LayoutTrace(heapPreview));Require(hostingSummary.Height>=hostingSummary.Font.Height,"provider summary readable: "+LayoutTrace(hostingSummary));}
         Require(dashboardTitle.Height>=dashboardTitle.Font.Height,"page title fits: "+LayoutTrace(dashboardTitle));
     }
     void CheckHarborScreens()
@@ -32,6 +33,10 @@ partial class CraftHarbor
             SetReviewSize(size);
             for(int page=0;page<9;page++){navigation[page].PerformClick();Require(workspace.SelectedIndex==page,"navigation routes to page");CaptureHarborPage("ui-harbor-"+size.Width+"-"+page+".png",page);}
         }
+        OnKeyDown(new KeyEventArgs(Keys.Alt|Keys.D9));Require(workspace.SelectedIndex==8,"Alt+9 navigation");
+        OnKeyDown(new KeyEventArgs(Keys.Control|Keys.L));Require(workspace.SelectedIndex==1&&command.Focused,"Ctrl+L console focus");
+        OnKeyDown(new KeyEventArgs(Keys.F1));Require(workspace.SelectedIndex==7,"F1 participant guide");
+        navigation[0].Focus();Require(SelectNextControl(navigation[0],true,true,true,true)&&ActiveControl!=null,"Tab-order navigation");
         string provider=hosting.Provider;
         foreach(var method in new[]{"playit","ngrok","direct","port-tool"}){
             hosting.Provider=method;connectionStatus="未設定";ApplyDiscoveredAddresses();

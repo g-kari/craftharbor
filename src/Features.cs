@@ -70,7 +70,7 @@ partial class CraftHarbor
         dash.Controls.Add(metricActions,0,3);
         var consolePage=Page(tabs,"コンソール");
         var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,142));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };consolePage.Resize+=delegate{consoleWrap.RowStyles[0].Height=consolePage.ClientSize.Width<900?216:142;};searchText=Input(consoleTools,230);
+        var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };searchText=Input(consoleTools,230);
         FlowBtn(consoleTools,"ログ内を検索",delegate { int pos=log.Text.IndexOf(searchText.Text,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);if(pos<0)pos=log.Text.IndexOf(searchText.Text,StringComparison.OrdinalIgnoreCase);if(pos>=0){log.Select(pos,searchText.Text.Length);log.ScrollToCaret();log.Focus();} });
         FlowBtn(consoleTools,"ログを保存",delegate { ExportLog(); });FlowBtn(consoleTools,"ログフォルダー",delegate { Open(Path.Combine(ServerDir,"logs")); });
         consoleWrap.Controls.Add(LogHeader(consoleTools),0,0);console.Dock=DockStyle.Fill;consoleWrap.Controls.Add(console,0,1);consolePage.Controls.Add(consoleWrap);

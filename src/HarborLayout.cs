@@ -105,7 +105,7 @@ partial class CraftHarbor
     Control StatusColumn(Label state,Button[] buttons,Label note)
     {
         var column=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(8,2,8,2),Margin=Padding.Empty};
-        column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));column.RowStyles.Add(new RowStyle(SizeType.Absolute,58));column.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+        column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));column.RowStyles.Add(new RowStyle(SizeType.Percent,100));column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));
         state.Margin=Padding.Empty;state.AutoSize=false;state.Dock=DockStyle.Fill;state.Font=new Font("Yu Gothic UI",14,FontStyle.Bold);state.AutoEllipsis=true;column.Controls.Add(state,0,0);
         var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in buttons){button.AutoSize=true;button.Margin=new Padding(0,2,6,2);actions.Controls.Add(button);}column.Controls.Add(actions,0,1);
         note.Margin=Padding.Empty;note.AutoSize=false;note.Dock=DockStyle.Fill;note.AutoEllipsis=true;note.Font=new Font("Yu Gothic UI",12);column.Controls.Add(note,0,2);return column;
@@ -170,6 +170,7 @@ partial class CraftHarbor
             dashboardRows.RowStyles[0].Height=(factor/dpi>1&&stacked?224:168)*factor;dashboardRows.RowStyles[1].Height=104*factor;dashboardRows.RowStyles[2].Height=224*factor;dashboardRows.RowStyles[3].Height=(stacked?650:378)*factor;
             dashboardRows.Height=(int)dashboardRows.RowStyles.Cast<RowStyle>().Sum(r=>r.Height)+8;
             foreach(var page in workspace.TabPages.Cast<TabPage>()){FitContentWidth(page,Math.Max(200,workspace.ClientSize.Width-36));FitFlowRows(page);}
+            if(workspace.SelectedIndex==1){var wrap=(TableLayoutPanel)workspace.TabPages[1].Controls[0];var header=(TableLayoutPanel)wrap.Controls[0];var filters=(FlowLayoutPanel)header.Controls[0];var searches=(FlowLayoutPanel)header.Controls[1];filters.WrapContents=true;int filterHeight=RequiredFlowHeight(filters),searchHeight=RequiredFlowHeight(searches);header.RowStyles[0].Height=filterHeight;wrap.RowStyles[0].Height=filterHeight+searchHeight+12;}
             foreach(int index in new[]{2,4,6}){var page=workspace.TabPages[index];var table=(TableLayoutPanel)page.Controls[0];page.AutoScroll=true;table.Dock=DockStyle.Top;table.Height=Math.Max(page.ClientSize.Height-page.Padding.Vertical-4,(int)table.RowStyles.Cast<RowStyle>().Where(r=>r.SizeType==SizeType.Absolute).Sum(r=>r.Height)+(int)(150*factor));}
         }finally{arrangingHarbor=false;}
     }
@@ -196,6 +197,12 @@ partial class CraftHarbor
         }
     }
 
+    int RequiredFlowHeight(FlowLayoutPanel flow)
+    {
+        int available=Math.Max(120,flow.ClientSize.Width-flow.Padding.Horizontal),x=0,y=0,line=0;
+        foreach(Control item in flow.Controls){if(!item.Visible)continue;int width=item.Width+item.Margin.Horizontal,height=item.Height+item.Margin.Vertical;if(x>0&&x+width>available){y+=line;x=0;line=0;}x+=width;line=Math.Max(line,height);}
+        return y+line+flow.Padding.Vertical+4;
+    }
     void FitFlowRows(Control parent)
     {
         foreach(Control child in parent.Controls){
@@ -204,9 +211,7 @@ partial class CraftHarbor
             var flow=child as FlowLayoutPanel;
             if(flow!=null&&flow.FlowDirection==FlowDirection.LeftToRight&&flow.Controls.OfType<Button>().Any()){
                 flow.WrapContents=true;
-                int available=Math.Max(120,flow.ClientSize.Width-flow.Padding.Horizontal);int x=0,y=0,line=0;
-                foreach(Control item in flow.Controls){if(!item.Visible)continue;int width=item.Width+item.Margin.Horizontal,height=item.Height+item.Margin.Vertical;if(x>0&&x+width>available){y+=line;x=0;line=0;}x+=width;line=Math.Max(line,height);}
-                int needed=y+line+flow.Padding.Vertical+4;var table=flow.Parent as TableLayoutPanel;
+                int needed=RequiredFlowHeight(flow);var table=flow.Parent as TableLayoutPanel;
                 if(table!=null&&flow.Dock==DockStyle.Fill){int row=table.GetRow(flow);if(row>=0&&row<table.RowStyles.Count&&table.RowStyles[row].SizeType==SizeType.Absolute)table.RowStyles[row].Height=Math.Max(table.RowStyles[row].Height,needed);}
                 if(flow.Dock==DockStyle.Bottom)flow.Height=Math.Max(flow.Height,needed);
             }FitFlowRows(child);}
