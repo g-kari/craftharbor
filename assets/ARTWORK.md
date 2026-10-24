@@ -11,3 +11,5 @@ The repository's MIT license applies to the original CraftHarbor artwork. Copyri
 The lighthouse, tall harbor and atlas are embedded into both binaries. No controls, text, credentials, game textures or user worlds are baked into artwork. Controls remain native and operable. Decoration is excluded from keyboard navigation. High-contrast mode hides harbor decoration and uses monochrome operation symbols.
 
 `tools/prepare-art.ps1` only reproduces the two original promotional assets. It does not replace the new atlas or tall harbor.
+
+`tools/build-icons.ps1` packages the atlas lighthouse into a seven-size (16, 24, 32, 48, 64, 128, 256) transparent ICO during the build. The app, setup, uninstall launcher and installed icon all use that same output. The original source atlas remains unchanged.
