@@ -148,7 +148,7 @@ partial class CraftHarbor
                 if(ready&&!stopping&&(now-lastPoll).TotalSeconds>=15){PollMetrics();RefreshUsers();}
             }else{cpuValue.Text=ramValue.Text=tpsValue.Text=msptValue.Text=uptimeValue.Text=onlineValue.Text="—";history.Titles["state"].Text=history.Series[0].Points.Count==0?"停止中：起動後にCPU・RAMの実測グラフを表示します":"停止中：最後に取得したCPU・RAMの履歴";}
             diskValue.Text=(new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace/1073741824.0).ToString("0.0")+" GiB";
-        }catch(Exception e){metricsNote.Text="メトリクス取得待ち："+e.Message;}
+        }catch(Exception e){metricsNote.Text="メトリクス取得待ち："+e.Message;}RefreshHistoryCaption();
     }
     void RequestRestart(){if(!Running(server)){StartServer();return;}if(stopping)return;restartPending=true;StopServer();Add("[運用] 保存・停止後に再起動します。");}
     void ExportMetrics(){using(var d=new SaveFileDialog{Filter="CSV|*.csv",FileName="craftharbor-metrics-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".csv"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllLines(d.FileName,new[]{"timestamp_utc,cpu_pc_percent,process_ram_gib,tps_5s,mspt_median,players"}.Concat(samples),new UTF8Encoding(true));Add("[管理] CSVを保存しました。");}}

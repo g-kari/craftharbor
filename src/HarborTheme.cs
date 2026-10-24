@@ -37,8 +37,8 @@ static class HarborTheme
         foreach(var corner in new[]{new Point(l,t),new Point(r-11,t),new Point(l,b-11),new Point(r-11,b-11)}){
             bool right=corner.X>l,bottom=corner.Y>t;int x=corner.X,y=corner.Y;
             using(var shadow=new SolidBrush(Color.FromArgb(44,29,19)))g.FillRectangle(shadow,x,y,12,12);
-            using(var fill=new SolidBrush(Wood)){g.FillRectangle(fill,x+1,y+1,10,4);g.FillRectangle(fill,x+(right?7:1),y+1,4,10);}
-            using(var shine=new Pen(Color.FromArgb(241,184,99))){g.DrawLine(shine,x+2,y+1,x+9,y+1);g.DrawLine(shine,x+(right?10:1),y+2,x+(right?10:1),y+9);}
+            using(var fill=new SolidBrush(Wood)){g.FillRectangle(fill,x+1,y+(bottom?7:1),10,4);g.FillRectangle(fill,x+(right?7:1),y+1,4,10);}
+            using(var shine=new Pen(Color.FromArgb(241,184,99))){g.DrawLine(shine,x+2,y+(bottom?10:1),x+9,y+(bottom?10:1));g.DrawLine(shine,x+(right?10:1),y+2,x+(right?10:1),y+9);}
             using(var nail=new SolidBrush(Color.FromArgb(70,44,23)))g.FillRectangle(nail,x+(right?8:3),y+(bottom?8:3),2,2);
         }
     }

@@ -24,10 +24,10 @@ partial class CraftHarbor
     {
         // Reserve predictable space for 12pt axes; automatic layout can squeeze the plot
         // to a few pixels once a state title and legend are present.
-        var area=history.ChartAreas[0];area.Position=new ElementPosition(0,24,100,76);
-        area.InnerPlotPosition=new ElementPosition(14,4,72,70);area.AxisY.Interval=25;
+        var area=history.ChartAreas[0];area.Position=new ElementPosition(0,16,100,84);
+        area.InnerPlotPosition=new ElementPosition(14,2,72,74);area.AxisY.Interval=25;history.Titles["state"].Visible=false;RefreshHistoryCaption();
         history.Titles["state"].Position=new ElementPosition(2,0,96,12);
-        history.Legends[0].Position=new ElementPosition(48,12,50,12);history.Legends[0].Alignment=StringAlignment.Far;
+        history.Legends[0].Position=new ElementPosition(48,0,50,16);history.Legends[0].Alignment=StringAlignment.Far;
     }
     void SetChartWindow(DateTime now)
     {

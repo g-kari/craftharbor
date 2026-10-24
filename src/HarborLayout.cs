@@ -15,9 +15,10 @@ partial class CraftHarbor
     bool arrangingHarbor,harborLayoutQueued;
     HarborFrame statusFrame;
     TableLayoutPanel majorMetrics,minorMetrics,joinPanel;
-    Label addressCaption;
+    Label addressCaption,historyBadge;
+    FlowLayoutPanel navigationHost;
     static string[] PageNames={"ダッシュボード","コンソール","参加者・権限","サーバー設定","バックアップ","運用・予約","MOD・プラグイン","参加者向け案内","Discord通知"};
-    Label HarborLabel(string text,float size,bool bold){return new Label{Text=text,AutoSize=true,Font=new Font("Yu Gothic UI",size,bold?FontStyle.Bold:FontStyle.Regular),ForeColor=Ink,Margin=Padding.Empty,Tag="harbor-text"};}
+    Label HarborLabel(string text,float size,bool bold){return new Label{Text=text,AutoSize=true,Font=new Font("Yu Gothic UI",size,bold?FontStyle.Bold:FontStyle.Regular),ForeColor=Ink,BackColor=Color.Transparent,Margin=Padding.Empty,Tag="harbor-text"};}
     void BuildHarborShell(Control oldCards,Control oldJoin,Control allow)
     {
         var publicSettings=oldCards.Controls[1].Controls.OfType<Button>().First(b=>b!=connect&&b!=disconnect);
@@ -40,10 +41,10 @@ partial class CraftHarbor
         var identity=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false};
         serverIdentity=HarborLabel(profile.Name,13.5f,true);serverIdentity.MaximumSize=new Size(244,54);serverIdentity.AutoEllipsis=true;identity.Controls.Add(serverIdentity);
         var choose=(ActionButton)FlowBtn(identity,"サーバー一覧",delegate{OpenServersDialog();});choose.IconKey="folder";choose.MinimumSize=new Size(242,46);choose.AccessibleDescription="サーバーを登録・切替、または別のウィンドウで開きます。";sidebarLayout.Controls.Add(identity,0,0);
-        var nav=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true,Margin=Padding.Empty};
+        var nav=navigationHost=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true,Margin=Padding.Empty};
         string[] icons={"chart","console","users","settings","backup","clock","mods","guide","discord"};
         for(int i=0;i<PageNames.Length;i++){int index=i;var button=(ActionButton)Btn(nav,PageNames[i],0,0,218,delegate{workspace.SelectedIndex=index;});button.Navigation=true;button.IconKey=icons[i];button.Height=50;button.Margin=new Padding(0,0,0,4);button.AccessibleName=PageNames[i];tips.SetToolTip(button,PageNames[i]+" / Alt+"+(i+1));navigation.Add(button);}
-        nav.Resize+=delegate{foreach(var button in navigation)button.Width=Math.Max(180,nav.ClientSize.Width-4);};sidebarLayout.Controls.Add(nav,0,1);
+        nav.Resize+=delegate{FitNavigationWidth();};sidebarLayout.Controls.Add(nav,0,1);
         var access=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(0,12,0,0)};
         largeText=new HarborCheckBox{Text="文字を大きく",AutoSize=true,AccessibleName="文字を大きく表示"};
         highContrast=new HarborCheckBox{Text="高コントラスト",AutoSize=true,Checked=SystemInformation.HighContrast,AccessibleName="高コントラスト表示"};access.Controls.Add(largeText);access.Controls.Add(highContrast);sidebarLayout.Controls.Add(access,0,2);
@@ -94,8 +95,8 @@ partial class CraftHarbor
         historyAndLogs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,64));historyAndLogs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,36));
         historyAndLogs.RowStyles.Add(new RowStyle(SizeType.Percent,100));historyAndLogs.RowStyles.Add(new RowStyle(SizeType.Absolute,0));
         var graph=new HarborFrame{Dock=DockStyle.Fill,BackColor=Card,RowCount=4,ColumnCount=1,Padding=new Padding(10),Margin=new Padding(0,0,8,0)};
-        graph.RowStyles.Add(new RowStyle(SizeType.Absolute,36));graph.RowStyles.Add(new RowStyle(SizeType.Percent,100));graph.RowStyles.Add(new RowStyle(SizeType.Absolute,44));graph.RowStyles.Add(new RowStyle(SizeType.Absolute,52));graph.Controls.Add(SectionTitle("CPU・RAMの履歴","chart"),0,0);history.Dock=DockStyle.Fill;graph.Controls.Add(history,0,1);metricsNote.Dock=DockStyle.Fill;graph.Controls.Add(metricsNote,0,2);
-        var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in metricActions){button.Margin=new Padding(0,4,6,0);actions.Controls.Add(button);}graph.Controls.Add(actions,0,3);historyAndLogs.Controls.Add(graph,0,0);
+        graph.RowStyles.Add(new RowStyle(SizeType.Absolute,36));graph.RowStyles.Add(new RowStyle(SizeType.Percent,100));graph.RowStyles.Add(new RowStyle(SizeType.Absolute,44));graph.RowStyles.Add(new RowStyle(SizeType.Absolute,52));var graphHeading=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty,BackColor=Color.Transparent};graphHeading.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));graphHeading.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,170));graphHeading.Controls.Add(SectionTitle("CPU・RAMの履歴","chart"),0,0);historyBadge=HarborLabel("取得待ち",12,false);historyBadge.Dock=DockStyle.Fill;historyBadge.TextAlign=ContentAlignment.MiddleRight;historyBadge.ForeColor=Muted;graphHeading.Controls.Add(historyBadge,1,0);graph.Controls.Add(graphHeading,0,0);history.Dock=DockStyle.Fill;graph.Controls.Add(history,0,1);metricsNote.Dock=DockStyle.Fill;graph.Controls.Add(metricsNote,0,2);
+        var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in metricActions){button.Margin=new Padding(0,4,6,0);((ActionButton)button).IconKey=button.Text.Contains("CSV")?"guide":button.Text.Contains("診断")?"chart":"refresh";actions.Controls.Add(button);}graph.Controls.Add(actions,0,3);historyAndLogs.Controls.Add(graph,0,0);
         var logs=new HarborFrame{Dock=DockStyle.Fill,BackColor=Card,RowCount=3,ColumnCount=1,Padding=new Padding(10),Margin=new Padding(0,0,4,0)};
         logs.RowStyles.Add(new RowStyle(SizeType.Absolute,36));logs.RowStyles.Add(new RowStyle(SizeType.Percent,100));logs.RowStyles.Add(new RowStyle(SizeType.Absolute,56));logs.Controls.Add(SectionTitle("最近のログ","guide"),0,0);
         recentLogs=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,WordWrap=true,BackColor=HarborTheme.Input,ForeColor=Ink,Font=new Font("Yu Gothic UI",12),AccessibleName="最近のログ（すべての種類）"};logs.Controls.Add(recentLogs,0,1);
@@ -140,6 +141,17 @@ partial class CraftHarbor
             values[i].Margin=Padding.Empty;values[i].Font=new Font("Segoe UI",small?18:24,FontStyle.Bold);values[i].ForeColor=Ink;values[i].AutoEllipsis=true;values[i].TextAlign=ContentAlignment.MiddleLeft;values[i].Dock=DockStyle.Fill;tile.Controls.Add(values[i],small?2:1,small?0:1);
             if(!small)tile.SetColumnSpan(values[i],2);band.Controls.Add(tile,i,0);
         }return band;
+    }
+    void FitNavigationWidth()
+    {
+        if(navigationHost==null)return;int needed=navigation.Sum(b=>b.Height+b.Margin.Vertical);int width=Math.Max(180,navigationHost.Width-navigationHost.Padding.Horizontal-(needed>navigationHost.Height?SystemInformation.VerticalScrollBarWidth:0)-8);
+        foreach(var button in navigation)if(button.Width!=width)button.Width=width;
+    }
+    void RefreshHistoryCaption()
+    {
+        if(historyBadge==null||history.Titles.Count==0)return;string state=history.Titles["state"].Text;
+        history.Titles["state"].Visible=false;historyBadge.Text=state.Contains("最後")?"停止中・前回の履歴":state.Contains("合成")?"表示検証用":history.Series[0].Points.Count==0?"取得待ち":"直近5分";
+        tips.SetToolTip(historyBadge,state);history.AccessibleDescription=state;
     }
     void SelectHarborPage()
     {
@@ -191,10 +203,10 @@ partial class CraftHarbor
             harborHeader.SetColumnSpan(harborHeader.Controls[0],compact||!dashboard?2:1);
             harborHeader.RowStyles[1].Height=compact&&dashboard?56*factor:0;
             var titles=(TableLayoutPanel)harborHeader.Controls[0];titles.RowStyles[0].Height=dashboard?24*factor:0;titles.RowStyles[1].Height=48*factor;
-            for(int col=1;col<4;col++)addressRow.ColumnStyles[col].Width=new[]{108,100,184}[col-1]*factor;
-            sidebarLayout.RowStyles[0].Height=100*factor;sidebarLayout.RowStyles[2].Height=88*factor;
-            sidebarLayout.RowStyles[3].Height=sidebarLayout.ClientSize.Height<800*factor||highContrast.Checked?0:224*dpi;
-            sidebarArt.Visible=sidebarLayout.RowStyles[3].Height>0;
+            for(int col=1;col<4;col++)addressRow.ColumnStyles[col].Width=new[]{116,116,192}[col-1]*factor;
+            sidebarLayout.RowStyles[0].Height=96*factor;sidebarLayout.RowStyles[2].Height=84*factor;
+            float artRoom=sidebarLayout.ClientSize.Height-((486+96+84)*factor+sidebarLayout.Padding.Vertical);sidebarLayout.RowStyles[3].Height=artRoom<128*dpi||highContrast.Checked?0:Math.Min(224*dpi,artRoom);
+            sidebarArt.Visible=sidebarLayout.RowStyles[3].Height>0;FitNavigationWidth();RefreshHistoryCaption();
             bool stacked=workspace.ClientSize.Width<940*factor;
             var statusPublic=statusFrame.Controls[1];statusFrame.SetCellPosition(statusPublic,new TableLayoutPanelCellPosition(stacked?0:1,stacked?1:0));statusFrame.SetColumnSpan(statusPublic,stacked?2:1);statusFrame.SetColumnSpan(statusFrame.Controls[0],stacked?2:1);statusFrame.RowStyles[1].Height=stacked?138*factor:0;statusFrame.DivideColumns=!stacked;
             joinPanel.SetCellPosition(addressRow,new TableLayoutPanelCellPosition(stacked?0:1,stacked?1:0));joinPanel.SetColumnSpan(addressRow,stacked?2:1);joinPanel.RowStyles[1].Height=stacked?48*factor:0;joinPanel.ColumnStyles[0].Width=174*factor;joinPanel.RowStyles[0].SizeType=stacked?SizeType.Absolute:SizeType.Percent;joinPanel.RowStyles[0].Height=stacked?28*factor:100;
@@ -209,7 +221,7 @@ partial class CraftHarbor
             dashboardRows.Height=(int)dashboardRows.RowStyles.Cast<RowStyle>().Sum(r=>r.Height)+2;
             foreach(var page in workspace.TabPages.Cast<TabPage>()){FitContentWidth(page,Math.Max(200,workspace.ClientSize.Width-36));FitFlowRows(page);}
             if(workspace.SelectedIndex==1){var wrap=(TableLayoutPanel)workspace.TabPages[1].Controls[0];var header=(TableLayoutPanel)wrap.Controls[0];var filters=(FlowLayoutPanel)header.Controls[0];var searches=(FlowLayoutPanel)header.Controls[1];filters.WrapContents=true;int filterHeight=RequiredFlowHeight(filters),searchHeight=RequiredFlowHeight(searches);header.RowStyles[0].Height=filterHeight;wrap.RowStyles[0].Height=filterHeight+searchHeight+12;}
-            foreach(int index in new[]{2,4,6}){var page=workspace.TabPages[index];var table=(TableLayoutPanel)page.Controls[0];page.AutoScroll=true;table.Dock=DockStyle.Top;table.Height=Math.Max(page.ClientSize.Height-page.Padding.Vertical-4,(int)table.RowStyles.Cast<RowStyle>().Where(r=>r.SizeType==SizeType.Absolute).Sum(r=>r.Height)+(int)(150*factor));}
+            FitNavigationWidth();foreach(int index in new[]{2,4,6}){var page=workspace.TabPages[index];var table=(TableLayoutPanel)page.Controls[0];page.AutoScroll=true;table.Dock=DockStyle.Top;table.Height=Math.Max(page.ClientSize.Height-page.Padding.Vertical-4,(int)table.RowStyles.Cast<RowStyle>().Where(r=>r.SizeType==SizeType.Absolute).Sum(r=>r.Height)+(int)(150*factor));}
         }finally{arrangingHarbor=false;}
     }
 

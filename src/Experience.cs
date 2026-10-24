@@ -23,7 +23,7 @@ class ActionButton : Button
     public bool Selected,Navigation,Primary;
     bool hover;
     public ActionButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Cursor=Cursors.Hand;}
-    public override Size GetPreferredSize(Size proposedSize){var text=TextRenderer.MeasureText(Text,Font);return new Size(Math.Max(MinimumSize.Width,text.Width+(IconKey.Length>0?(Navigation?64:54):28)),Math.Max(Navigation?50:44,text.Height+16));}
+    public override Size GetPreferredSize(Size proposedSize){var text=TextRenderer.MeasureText(Text,Font);return new Size(Math.Max(MinimumSize.Width,text.Width+(IconKey.Length>0?(Navigation?72:62):28)),Math.Max(Navigation?50:44,text.Height+16));}
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnPaint(PaintEventArgs e)
@@ -145,7 +145,7 @@ partial class CraftHarbor
     }
     void StyleControls(Control rootControl)
     {
-        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,50);a.Height=50;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.AutoSizeMode=AutoSizeMode.GrowAndShrink;b.Font=new Font("Yu Gothic UI",b is ActionButton&&((ActionButton)b).Navigation?13.5f:12.5f,b is ActionButton&&(((ActionButton)b).Navigation||((ActionButton)b).Primary)?FontStyle.Bold:FontStyle.Regular);}
+        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c is Label)c.BackColor=Color.Transparent;if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(Math.Max(90,b.MinimumSize.Width),44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,50);a.Height=50;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.AutoSizeMode=AutoSizeMode.GrowAndShrink;b.Font=new Font("Yu Gothic UI",b is ActionButton&&((ActionButton)b).Navigation?13.5f:12.5f,b is ActionButton&&(((ActionButton)b).Navigation||((ActionButton)b).Primary)?FontStyle.Bold:FontStyle.Regular);}
             if(c is TextBox){c.AccessibleRole=AccessibleRole.Text;c.AccessibleName=c.AccessibleName??"入力欄";}
             if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=36;grid.AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.AllCells;grid.DefaultCellStyle.Padding=new Padding(8,4,8,4);grid.ColumnHeadersDefaultCellStyle.Padding=new Padding(8,4,8,4);grid.ColumnHeadersHeight=Math.Max(36,grid.Font.Height+12);grid.ColumnHeadersBorderStyle=DataGridViewHeaderBorderStyle.Single;grid.CellBorderStyle=DataGridViewCellBorderStyle.SingleHorizontal;grid.GridColor=HarborTheme.Border;if(string.IsNullOrWhiteSpace(grid.AccessibleName))grid.AccessibleName="一覧表";}
             if(c is TextBox||c is NumericUpDown||c is ComboBox)InputFrame.Wrap(c);else StyleControls(c);}
