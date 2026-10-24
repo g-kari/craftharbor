@@ -33,7 +33,7 @@ partial class CraftHarbor
             SetReviewWindowPos(Handle,IntPtr.Zero,0,0,1024,720,0x44);Activate();Application.DoEvents();ArrangeHarbor();Application.DoEvents();Refresh();
             Require(!headerActions.RectangleToScreen(headerActions.ClientRectangle).IntersectsWith(profileSummary.RectangleToScreen(profileSummary.ClientRectangle)),"native header metadata remains visible after resizing");
             using(var bitmap=new Bitmap(Width,Height))using(var graphics=Graphics.FromImage(bitmap)){graphics.CopyFromScreen(Location,Point.Empty,Size);bitmap.Save(Path.Combine(root,name),System.Drawing.Imaging.ImageFormat.Png);}
-        }catch(Exception error){File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"Native desktop capture unavailable: "+error.GetType().Name+"\n");}
+        }catch(System.ComponentModel.Win32Exception error){File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"Native desktop capture unavailable: "+error.GetType().Name+"\n");}
     }
     void CheckHarborScreens()
     {
