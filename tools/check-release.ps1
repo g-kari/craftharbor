@@ -9,7 +9,8 @@ $setupName="CraftHarbor-Setup-$version.exe"
 $uninstallName="CraftHarbor-Uninstall-$version.exe"
 foreach($name in @('CraftHarbor.exe','CraftHarbor.Host.exe',$setupName,$uninstallName)){
  $info=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $dist $name))
- if($info.FileVersion -ne $numericVersion){throw "Version mismatch in $name : $($info.FileVersion), expected $numericVersion"}
+ $actualVersion=("{0}.{1}.{2}.{3}" -f $info.FileMajorPart,$info.FileMinorPart,$info.FileBuildPart,$info.FilePrivatePart)
+ if($actualVersion -ne $numericVersion){throw "Version mismatch in $name : $actualVersion, expected $numericVersion"}
 }
 $archive="CraftHarbor-$version-windows-x64.zip"
 $names=@($archive,($archive+'.sha256'),$setupName,($setupName+'.sha256'),$uninstallName,($uninstallName+'.sha256'))
