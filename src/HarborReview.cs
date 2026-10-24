@@ -18,7 +18,7 @@ partial class CraftHarbor
     }
     void CaptureHarborPage(string name,int page)
     {
-        workspace.SelectedIndex=page;workspace.TabPages[page].AutoScrollPosition=Point.Empty;
+        File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),name+"\n");workspace.SelectedIndex=page;workspace.TabPages[page].AutoScrollPosition=Point.Empty;
         var form=workspace.TabPages[page].Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
         if(form!=null)form.AutoScrollPosition=Point.Empty;
         ArrangeHarbor();Application.DoEvents();CaptureGenericCheck(this,name,page);
@@ -55,7 +55,7 @@ partial class CraftHarbor
         Require(navigation.All(b=>b.ForeColor==Color.White),"high contrast navigation");
         Require(Descendants(this).Where(c=>c is Button||c is Label||c is TextBox||c is ComboBox).All(c=>c.Font.SizeInPoints>=12),"12pt floor retained");
         workspace.SelectedIndex=0;workspace.TabPages[0].ScrollControlIntoView(historyAndLogs);Application.DoEvents();CaptureGenericCheck(this,"ui-harbor-contrast-history.png",0);
-        OpenServersDialog(true);HostingSettings(true);ShowPackImport(this,root,"",true);
+        File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"High contrast dialogs\n");OpenServersDialog(true);HostingSettings(true);ShowPackImport(this,root,"",true);
         foreach(var name in new[]{"ui-servers","ui-hosting","ui-import"})File.Copy(Path.Combine(root,name+".png"),Path.Combine(root,name+"-contrast.png"),true);
         largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();SetReviewSize(new Size(1360,960));
         preparingServer=true;RefreshDashboardPresentation(false,false);Require(!start.Enabled&&serverState.Text.Contains("確認中"),"preparing disables game start");preparingServer=false;

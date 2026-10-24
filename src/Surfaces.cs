@@ -10,7 +10,7 @@ static class SurfacePaint
 }
 class SurfacePanel:Panel
 {
-    public bool WoodFrame;
+    public bool WoodFrame {get;set;}
     public SurfacePanel(){DoubleBuffered=true;}
     protected override void OnPaintBackground(PaintEventArgs e){SurfacePaint.Background(this,e.Graphics,WoodFrame);}
 }

@@ -188,7 +188,7 @@ partial class CraftHarbor
                     if(heading!=null&&child!=heading)childRoom=Math.Max(120,childRoom-heading.Width-heading.Margin.Horizontal);
                 }
                 if(frame!=null&&frame.Dock==DockStyle.None){int width;if(!baseWidths.TryGetValue(frame,out width)){width=frame.Width;baseWidths[frame]=width;}frame.Width=Math.Min(width,childRoom);}
-                if(label!=null&&label.AutoSize)label.MaximumSize=new Size(childRoom,0);
+                if(label!=null&&label.AutoSize)label.MaximumSize=new Size(parentFlow.FlowDirection==FlowDirection.LeftToRight&&label.MaximumSize.Width>0?Math.Min(childRoom,label.MaximumSize.Width):childRoom,0);
                 if(check!=null&&check.AutoSize)check.MaximumSize=new Size(childRoom,0);
                 if(flow!=null&&flow.AutoSize)flow.MaximumSize=new Size(childRoom,0);
             }

@@ -30,7 +30,13 @@ if($Scenario -eq 'argfile') {
 }
 foreach($name in @('whitelist.json','ops.json','banned-players.json')) { [IO.File]::WriteAllText((Join-Path $server $name),'[]') }
 $exe = Join-Path $repoRoot 'dist\CraftHarbor.exe'
-$check = Start-Process -FilePath $exe -ArgumentList @('--experience-check','--workspace',('"'+$fixture+'"')) -Wait -PassThru
+$check = Start-Process -FilePath $exe -ArgumentList @('--experience-check','--workspace',('"'+$fixture+'"')) -WindowStyle Hidden -PassThru
+if(!$check.WaitForExit(180000)) {
+    Stop-Process -Id $check.Id -Force -ErrorAction SilentlyContinue
+    $progress = Join-Path $fixture 'ui-check-progress.txt'
+    if(Test-Path -LiteralPath $progress){Get-Content -LiteralPath $progress}
+    throw 'Synthetic UI check exceeded three minutes; no real server was started.'
+}
 $report = Join-Path $fixture 'experience-verification.txt'
 if(Test-Path -LiteralPath $report) { Get-Content -LiteralPath $report }
 if($check.ExitCode -ne 0) { throw 'UI fixture checks failed.' }

@@ -11,6 +11,7 @@ partial class CraftHarbor
     void InitializeMetricChart()
     {
         var area=history.ChartAreas[0];var font=new Font("Yu Gothic UI",12);
+        area.AxisX.IsLabelAutoFit=area.AxisY.IsLabelAutoFit=area.AxisY2.IsLabelAutoFit=false;history.Legends[0].IsTextAutoFit=false;
         area.AxisX.LabelStyle.Font=area.AxisY.LabelStyle.Font=area.AxisY2.LabelStyle.Font=font;
         area.AxisY.TitleFont=area.AxisY2.TitleFont=font;area.AxisX.IntervalType=DateTimeIntervalType.Seconds;area.AxisX.Interval=60;
         area.AxisY.LineColor=area.AxisX.LineColor=area.AxisY2.LineColor=Muted;area.AxisX.MajorTickMark.LineColor=area.AxisY.MajorTickMark.LineColor=area.AxisY2.MajorTickMark.LineColor=Muted;
