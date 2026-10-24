@@ -15,6 +15,7 @@ Discord webhook URLs are encrypted with Windows DPAPI for the current user and s
 Other Discord options are stored in `discord-settings.json` without the URL. No webhook is preconfigured.
 playit maintains its own credential file in the user-controlled workspace. Neither file belongs in source control or support attachments.
 Connection choices, selected tool paths and public voice addresses are stored in `connection-settings.json` in the workspace. Import receipts retain only the download host, archive SHA-256 and timestamp; they omit signed URL queries. A bounded ring of runtime logs stays in the local host process for reconnecting the manager.
+The console's selected source filter is stored as a number in `manager-log-filter.txt`. Filtering changes the displayed/exported view; the manager retains a bounded local in-memory buffer so sources can be switched without losing recent messages.
 
 ## Optional network actions
 

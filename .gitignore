@@ -17,6 +17,7 @@ manager-profile.json
 servers.json
 memory-reservations.json
 manager-settings.txt
+manager-log-filter.txt
 java-path.txt
 verification*.txt
 verification*.log

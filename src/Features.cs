@@ -69,11 +69,11 @@ partial class CraftHarbor
         FlowBtn(metricActions,"今すぐ取得",delegate { PollMetrics(); });FlowBtn(metricActions,"CSVを書き出す",delegate { ExportMetrics(); });FlowBtn(metricActions,"診断を表示",delegate { Send("spark health show --memory");tabs.SelectedIndex=1; });
         dash.Controls.Add(metricActions,0,3);
         var consolePage=Page(tabs,"コンソール");
-        var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,42));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+        var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,96));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=false };searchText=Input(consoleTools,230);
         FlowBtn(consoleTools,"ログ内を検索",delegate { int pos=log.Text.IndexOf(searchText.Text,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);if(pos<0)pos=log.Text.IndexOf(searchText.Text,StringComparison.OrdinalIgnoreCase);if(pos>=0){log.Select(pos,searchText.Text.Length);log.ScrollToCaret();log.Focus();} });
         FlowBtn(consoleTools,"ログを保存",delegate { ExportLog(); });FlowBtn(consoleTools,"ログフォルダー",delegate { Open(Path.Combine(ServerDir,"logs")); });
-        consoleWrap.Controls.Add(consoleTools,0,0);console.Dock=DockStyle.Fill;consoleWrap.Controls.Add(console,0,1);consolePage.Controls.Add(consoleWrap);
+        consoleWrap.Controls.Add(LogHeader(consoleTools),0,0);console.Dock=DockStyle.Fill;consoleWrap.Controls.Add(console,0,1);consolePage.Controls.Add(consoleWrap);
         var usersPage=Page(tabs,"参加者・権限");
         var userLayout=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=3 };userLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));userLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,48));userLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,46));usersPage.Controls.Add(userLayout);
         usersGrid=Grid();usersGrid.Columns.Add("name","ユーザー名");usersGrid.Columns.Add("online","接続中");usersGrid.Columns.Add("allowed","参加許可");usersGrid.Columns.Add("op","OP権限");usersGrid.Columns.Add("banned","BAN");userLayout.Controls.Add(usersGrid,0,0);

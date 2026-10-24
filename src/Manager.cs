@@ -197,8 +197,7 @@ partial class CraftHarbor : Form
     }
     void TickState()
     {
-        PollPersistentHost();string s;var sb=new StringBuilder();int count=0;while(count++<400 && queue.TryDequeue(out s))sb.AppendLine(s);
-        if(sb.Length>0) { if(log.TextLength>250000)log.Text=log.Text.Substring(log.TextLength-150000);log.AppendText(sb.ToString()); }
+        PollPersistentHost();string s;var incoming=new System.Collections.Generic.List<string>();int count=0;while(count++<400&&queue.TryDequeue(out s))incoming.Add(s);AppendLogRecords(incoming);
         bool sr=Running(server),tr=Running(tunnel);
         UpdateFeatures(sr,tr);
         serverState.Text="サーバー："+(sr?(stopping?"保存・停止中":ready?"稼働中":"起動中…"):"停止中");

@@ -3,6 +3,7 @@
 General-purpose, multi-server preview of CraftHarbor.
 
 This version adds independent persistent server/tunnel processes with UI reconnection, HTTPS server-pack ZIP import with progress and cancellation, a pinned Create: Astral preset, selectable playit/ngrok/direct/external-tool publishing, voice UDP detection and configuration, and per-user setup/uninstall programs. Input fields, choices, checkboxes and number controls share the application's design; operational pages use a larger editing area.
+The console can show all records, Minecraft only, public connection logs only, or manager messages only. Its source choice is remembered per workspace, and switching sources preserves recent records in a bounded buffer. Saving logs exports the currently displayed view.
 
 Read-only playit agent credentials cannot create public tunnels. The application retrieves existing addresses and opens the official setup page for creation. ngrok TCP does not carry UDP voice traffic. External port tools are launched for the operator to configure; successful routing is not assumed.
 

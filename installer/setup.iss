@@ -3,6 +3,7 @@
 AppId={{3B9C29C1-CC53-49D4-9B35-EA0D4835CB08}
 AppName=CraftHarbor
 AppVersion={#AppVersion}
+VersionInfoVersion=0.3.0.0
 AppPublisher=g-kari
 AppPublisherURL=https://github.com/g-kari/craftharbor
 AppSupportURL=https://github.com/g-kari/craftharbor/issues
