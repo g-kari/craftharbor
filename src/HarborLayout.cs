@@ -12,7 +12,7 @@ partial class CraftHarbor
     HarborArtwork sidebarArt;
     ActionButton launchAll;
     Button shareAccountButton;
-    bool arrangingHarbor;
+    bool arrangingHarbor,harborLayoutQueued;
     static string[] PageNames={"ダッシュボード","コンソール","参加者・権限","サーバー設定","バックアップ","運用・予約","MOD・プラグイン","参加者向け案内","Discord通知"};
     Label HarborLabel(string text,float size,bool bold){return new Label{Text=text,AutoSize=true,Font=new Font("Yu Gothic UI",size,bold?FontStyle.Bold:FontStyle.Regular),ForeColor=Ink,Margin=Padding.Empty,Tag="harbor-text"};}
     void BuildHarborShell(Control oldCards,Control oldJoin,Control allow)
@@ -101,11 +101,11 @@ partial class CraftHarbor
         var usersLayout=(TableLayoutPanel)workspace.TabPages[2].Controls[0];usersLayout.RowCount=4;usersLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,100));allow.Dock=DockStyle.Fill;((FlowLayoutPanel)allow).WrapContents=true;usersLayout.Controls.Add(allow,0,3);
         footerState=new Label{Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,ForeColor=Muted,Padding=new Padding(12,0,0,0),AutoEllipsis=true,AccessibleName="サーバーと公開接続の状態"};shell.Controls.Add(footerState,0,2);
         workspace.SelectedIndexChanged+=delegate{SelectHarborPage();};navigation[0].Selected=true;
-        Resize+=delegate{ArrangeHarbor();};workspace.Resize+=delegate{ArrangeHarbor();};
+        Resize+=delegate{QueueHarborLayout();};workspace.Resize+=delegate{QueueHarborLayout();};harborMain.SizeChanged+=delegate{QueueHarborLayout();};
     }
     Control StatusColumn(Label state,Button[] buttons,Label note)
     {
-        var column=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(8,2,8,2),Margin=Padding.Empty};
+        var column=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(8,2,8,2),Margin=new Padding(0,0,2,0)};
         column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));column.RowStyles.Add(new RowStyle(SizeType.Percent,100));column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));
         state.Margin=Padding.Empty;state.AutoSize=false;state.Dock=DockStyle.Fill;state.Font=new Font("Yu Gothic UI",14,FontStyle.Bold);state.AutoEllipsis=true;column.Controls.Add(state,0,0);
         var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in buttons){button.AutoSize=true;button.Margin=new Padding(0,2,6,2);actions.Controls.Add(button);}column.Controls.Add(actions,0,1);
@@ -146,6 +146,11 @@ partial class CraftHarbor
         float factor=largeText.Checked?1.16f:1;var font=new Font("Yu Gothic UI",12*factor);foreach(var area in history.ChartAreas){area.AxisX.LabelStyle.Font=area.AxisY.LabelStyle.Font=area.AxisY2.LabelStyle.Font=font;area.AxisY.TitleFont=area.AxisY2.TitleFont=font;area.AxisX.LineColor=area.AxisY.LineColor=area.AxisY2.LineColor=contrast?Color.White:Muted;area.AxisY.MajorGrid.LineColor=contrast?Color.Gray:HarborTheme.Border;area.AxisY.TitleForeColor=contrast?Color.White:HarborTheme.Live;area.AxisY2.TitleForeColor=contrast?Color.White:HarborTheme.Blue;}
         foreach(var legend in history.Legends){legend.Font=font;legend.BackColor=contrast?Color.Black:Card;}foreach(var title in history.Titles)title.Font=font;
         history.Series[0].Color=contrast?Color.White:HarborTheme.Live;history.Series[1].Color=contrast?Color.Yellow:HarborTheme.Blue;
+    }
+    void QueueHarborLayout()
+    {
+        if(!IsHandleCreated){ArrangeHarbor();return;}if(harborLayoutQueued||IsDisposed)return;harborLayoutQueued=true;
+        BeginInvoke((Action)delegate{harborLayoutQueued=false;if(!IsDisposed)ArrangeHarbor();});
     }
     void ArrangeHarbor()
     {

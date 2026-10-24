@@ -13,7 +13,7 @@ partial class CraftHarbor
     {
         // A hosted runner's small desktop caps Form.Size in SetBoundsCore. Size this
         // synthetic window directly; no display settings or production window behavior changes.
-        Require(SetReviewWindowPos(Handle,IntPtr.Zero,0,0,size.Width,size.Height,0x416),"native review window sizing");Application.DoEvents();ArrangeHarbor();
+        if(size.Width<=SystemInformation.MaxWindowTrackSize.Width&&size.Height<=SystemInformation.MaxWindowTrackSize.Height)Size=size;else Require(SetReviewWindowPos(Handle,IntPtr.Zero,0,0,size.Width,size.Height,0x416),"native review window sizing");Application.DoEvents();ArrangeHarbor();Application.DoEvents();
         Require(Width==size.Width&&Height==size.Height,"requested native capture size "+size+", actual "+Size);
     }
     void CaptureHarborPage(string name,int page)
@@ -23,13 +23,15 @@ partial class CraftHarbor
         if(form!=null)form.AutoScrollPosition=Point.Empty;
         ArrangeHarbor();Application.DoEvents();CaptureGenericCheck(this,name,page);
         if(page==0){Require(heapPreview.Height>=heapPreview.Font.Height,"memory summary readable: "+LayoutTrace(heapPreview));Require(hostingSummary.Height>=hostingSummary.Font.Height,"provider summary readable: "+LayoutTrace(hostingSummary));}
+        if(page==0&&headerActions.Visible){Require(!headerActions.RectangleToScreen(headerActions.ClientRectangle).IntersectsWith(profileSummary.RectangleToScreen(profileSummary.ClientRectangle)),"header actions do not cover version metadata");}
         Require(dashboardTitle.Height>=dashboardTitle.Font.Height,"page title fits: "+LayoutTrace(dashboardTitle));
     }
     void CaptureNativeReview(string name)
     {
         // This only runs in the isolated Windows CI fixture. No local desktop is used.
         try{
-            SetReviewWindowPos(Handle,IntPtr.Zero,0,0,1024,720,0x44);Activate();Refresh();Application.DoEvents();
+            SetReviewWindowPos(Handle,IntPtr.Zero,0,0,1024,720,0x44);Activate();Application.DoEvents();ArrangeHarbor();Application.DoEvents();Refresh();
+            Require(!headerActions.RectangleToScreen(headerActions.ClientRectangle).IntersectsWith(profileSummary.RectangleToScreen(profileSummary.ClientRectangle)),"native header metadata remains visible after resizing");
             using(var bitmap=new Bitmap(Width,Height))using(var graphics=Graphics.FromImage(bitmap)){graphics.CopyFromScreen(Location,Point.Empty,Size);bitmap.Save(Path.Combine(root,name),System.Drawing.Imaging.ImageFormat.Png);}
         }catch(Exception error){File.AppendAllText(Path.Combine(root,"ui-check-progress.txt"),"Native desktop capture unavailable: "+error.GetType().Name+"\n");}
     }
