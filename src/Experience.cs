@@ -76,7 +76,7 @@ static class Icons
 partial class CraftHarbor
 {
     CheckBox autoMemory,largeText,highContrast;
-    Label heapPreview,heapExplanation,pageHeading,sideStatus;
+    Label heapPreview,heapExplanation,pageHeading;
     TextBox participantGuide;
     WorkspaceTabs workspace;
     readonly List<ActionButton> navigation=new List<ActionButton>();
@@ -133,7 +133,7 @@ partial class CraftHarbor
     }
     void StyleControls(Control rootControl)
     {
-        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,44);a.Height=46;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.Font=new Font("Yu Gothic UI",12);}
+        foreach(Control c in rootControl.Controls.Cast<Control>().ToArray()){if(c.Font.SizeInPoints<12)c.Font=new Font(c.Font.FontFamily,12,c.Font.Style);if(c is Button){var b=(Button)c;b.AccessibleName=b.Text;b.AccessibleDescription=b.Text+"を実行します。";b.MinimumSize=new Size(90,44);if(b is ActionButton){var a=(ActionButton)b;if(a.IconKey.Length==0)a.IconKey=IconFor(b.Text);if(a.Navigation){a.MinimumSize=new Size(180,44);a.Height=46;}else if(b.Parent is FlowLayoutPanel)b.AutoSize=true;}b.AutoSizeMode=AutoSizeMode.GrowAndShrink;b.Font=new Font("Yu Gothic UI",12);}
             if(c is TextBox){c.AccessibleRole=AccessibleRole.Text;c.AccessibleName=c.AccessibleName??"入力欄";}
             if(c is DataGridView){var grid=(DataGridView)c;grid.RowTemplate.Height=32;grid.ColumnHeadersHeight=36;grid.GridColor=HarborTheme.Border;if(string.IsNullOrWhiteSpace(grid.AccessibleName))grid.AccessibleName="一覧表";}
             if(c is TextBox||c is NumericUpDown||c is ComboBox)InputFrame.Wrap(c);else StyleControls(c);}
@@ -151,13 +151,13 @@ partial class CraftHarbor
         bool contrast=highContrast!=null&&highContrast.Checked;float factor=largeText!=null&&largeText.Checked?1.16f:1;
         var controls=new[]{(Control)dialog}.Concat(Descendants(dialog)).ToArray();var fonts=controls.ToDictionary(c=>c,c=>c.Font);
         foreach(var c in controls){var font=fonts[c];c.Font=new Font(font.FontFamily,Math.Max(12,font.SizeInPoints)*factor,font.Style);if(contrast){c.BackColor=Color.Black;c.ForeColor=Color.White;var link=c as LinkLabel;if(link!=null)link.LinkColor=link.ActiveLinkColor=link.VisitedLinkColor=Color.White;var grid=c as DataGridView;if(grid!=null){grid.BackgroundColor=Color.Black;grid.DefaultCellStyle.BackColor=grid.ColumnHeadersDefaultCellStyle.BackColor=Color.Black;grid.DefaultCellStyle.ForeColor=grid.ColumnHeadersDefaultCellStyle.ForeColor=Color.White;grid.DefaultCellStyle.SelectionBackColor=Color.White;grid.DefaultCellStyle.SelectionForeColor=Color.Black;}}}
-        ObserveKeyboardReview(dialog);var area=Screen.FromControl(this).WorkingArea;dialog.Size=new Size(Math.Min(dialog.Width,area.Width),Math.Min(dialog.Height,area.Height));
+        Action fit=delegate{FitContentWidth(dialog,Math.Max(200,dialog.ClientSize.Width-48));FitFlowRows(dialog);};dialog.Shown+=delegate{fit();};dialog.Resize+=delegate{fit();};fit();ObserveKeyboardReview(dialog);var area=Screen.FromControl(this).WorkingArea;dialog.Size=new Size(Math.Min(dialog.Width,area.Width),Math.Min(dialog.Height,area.Height));
     }
     void RefreshExperience()
     {
         if(autoMemory==null)return;bool running=Running(server);autoMemory.Enabled=!running&&!backupBusy;memory.Enabled=!running&&!autoMemory.Checked;
         if((DateTime.UtcNow-memoryPreviewAt).TotalSeconds>=10){memoryPreviewAt=DateTime.UtcNow;var info=PhysicalMemory();int budget=CurrentSharedBudget(false);string summary=running?"割当上限 "+activeHeapGiB+" GiB / 使用量は必要に応じて増減":autoMemory.Checked?"自動：登録 "+RegisteredCount()+"台 / 次回上限 約 "+budget+" GiB":"手動設定：上限 "+memory.Value+" GiB";heapPreview.Text=summary;heapExplanation.Text="搭載 "+info[0].ToString("0.0")+" GiB / 現在の空き "+info[1].ToString("0.0")+" GiB / 自動上限の目安 "+budget+" GiB\n登録数で予算を分け、OSと起動中の他サーバーの予約分を残します。登録追加後の再配分は各サーバーの次回起動時です。";}
-        if((DateTime.UtcNow-distancePreviewAt).TotalSeconds>=10){RefreshDistancePreview();RefreshJavaPreview();}if(sideStatus!=null)sideStatus.Text=(running?(ready?"SERVER ONLINE":"SERVER STARTING"):"SERVER OFFLINE")+"\n127.0.0.1 : "+ServerPort;
+        if((DateTime.UtcNow-distancePreviewAt).TotalSeconds>=10){RefreshDistancePreview();RefreshJavaPreview();}
         var values=new[]{cpuValue,ramValue,tpsValue,msptValue,uptimeValue,onlineValue,diskValue};string[] labels={"CPU使用率","プロセスメモリ","TPS","MSPT","稼働時間","オンライン人数","ディスク空き"};for(int i=0;i<values.Length;i++)if(values[i]!=null){values[i].AccessibleName=labels[i]+" "+values[i].Text;if(highContrast.Checked)values[i].ForeColor=Color.White;}
     }
     string GuideText(){return BuildParticipantGuide();}

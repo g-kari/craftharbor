@@ -6,6 +6,7 @@ using System.Windows.Forms;
 
 class HarborDialog:Form
 {
+    public HarborDialog(){AutoScaleMode=AutoScaleMode.Dpi;}
     static bool HasOpenChoice(Control container)
     {
         foreach(Control child in container.Controls){var choice=child as ComboBox;if(choice!=null&&choice.DroppedDown||HasOpenChoice(child))return true;}return false;
@@ -61,6 +62,6 @@ class HarborNumber:NumericUpDown
 class HarborCheckBox:CheckBox
 {
     public HarborCheckBox(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Padding=new Padding(0,3,0,3);Cursor=Cursors.Hand;}
-    public override Size GetPreferredSize(Size proposed){Size text=TextRenderer.MeasureText(Text,Font);return new Size(text.Width+32,Math.Max(30,text.Height+10));}
-    protected override void OnPaint(PaintEventArgs e){Color accent=BackColor==Color.Black?Color.White:HarborTheme.Live;Color surface=BackColor==Color.Black?Color.Black:HarborTheme.Input;e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;var r=new RectangleF(1,(Height-18)/2,18,18);using(var path=SurfacePaint.Round(r,2))using(var fill=new SolidBrush(Checked?accent:surface))using(var pen=new Pen(Checked?accent:Color.FromArgb(112,140,157),1.5f)){e.Graphics.FillPath(fill,path);e.Graphics.DrawPath(pen,path);}if(Checked)using(var p=new Pen(BackColor==Color.Black?Color.Black:HarborTheme.Background,2)){p.StartCap=p.EndCap=LineCap.Round;e.Graphics.DrawLines(p,new[]{new PointF(5,r.Y+9),new PointF(9,r.Y+13),new PointF(16,r.Y+5)});}TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(29,0,Math.Max(0,Width-29),Height),Enabled?ForeColor:Color.Gray,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPrefix);if(Focused)using(var p=new Pen(HarborTheme.Focus))e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);}
+    public override Size GetPreferredSize(Size proposed){int width=MaximumSize.Width>32?MaximumSize.Width-32:32767;Size text=TextRenderer.MeasureText(Text,Font,new Size(width,0),TextFormatFlags.WordBreak);return new Size(text.Width+32,Math.Max(30,text.Height+10));}
+    protected override void OnPaint(PaintEventArgs e){Color accent=BackColor==Color.Black?Color.White:HarborTheme.Live;Color surface=BackColor==Color.Black?Color.Black:HarborTheme.Input;e.Graphics.Clear(Parent==null?BackColor:Parent.BackColor);e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;var r=new RectangleF(1,(Height-18)/2,18,18);using(var path=SurfacePaint.Round(r,2))using(var fill=new SolidBrush(Checked?accent:surface))using(var pen=new Pen(Checked?accent:Color.FromArgb(112,140,157),1.5f)){e.Graphics.FillPath(fill,path);e.Graphics.DrawPath(pen,path);}if(Checked)using(var p=new Pen(BackColor==Color.Black?Color.Black:HarborTheme.Background,2)){p.StartCap=p.EndCap=LineCap.Round;e.Graphics.DrawLines(p,new[]{new PointF(5,r.Y+9),new PointF(9,r.Y+13),new PointF(16,r.Y+5)});}TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(29,0,Math.Max(0,Width-29),Height),Enabled?ForeColor:Color.Gray,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix);if(Focused)using(var p=new Pen(HarborTheme.Focus))e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);}
 }

@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 partial class CraftHarbor
 {
-    TableLayoutPanel harborMain,harborHeader,dashboardRows,historyAndLogs,sidebarLayout;
+    TableLayoutPanel harborMain,harborHeader,dashboardRows,historyAndLogs,sidebarLayout,harborBody,harborShell,addressRow;
     FlowLayoutPanel headerActions;
     Label dashboardTitle,footerState;
     TextBox recentLogs;
@@ -14,7 +14,7 @@ partial class CraftHarbor
     Button shareAccountButton;
     bool arrangingHarbor;
     static string[] PageNames={"ダッシュボード","コンソール","参加者・権限","サーバー設定","バックアップ","運用・予約","MOD・プラグイン","参加者向け案内","Discord通知"};
-    Label HarborLabel(string text,float size,bool bold){return new Label{Text=text,AutoSize=true,Font=new Font("Yu Gothic UI",size,bold?FontStyle.Bold:FontStyle.Regular),ForeColor=Ink,Margin=new Padding(0,0,0,8)};}
+    Label HarborLabel(string text,float size,bool bold){return new Label{Text=text,AutoSize=true,Font=new Font("Yu Gothic UI",size,bold?FontStyle.Bold:FontStyle.Regular),ForeColor=Ink,Margin=Padding.Empty,Tag="harbor-text"};}
     void BuildHarborShell(Control oldCards,Control oldJoin,Control allow)
     {
         var publicSettings=oldCards.Controls[1].Controls.OfType<Button>().First(b=>b!=connect&&b!=disconnect);
@@ -24,14 +24,14 @@ partial class CraftHarbor
         var metricActions=oldDashboard.Controls.OfType<FlowLayoutPanel>().First().Controls.OfType<Button>().ToArray();
         AddParticipantPage();AddDiscordPage();
 
-        var shell=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,BackColor=Bg,Padding=new Padding(4),Margin=Padding.Empty};
+        var shell=harborShell=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,BackColor=Bg,Padding=new Padding(4),Margin=Padding.Empty};
         shell.RowStyles.Add(new RowStyle(SizeType.Absolute,60));shell.RowStyles.Add(new RowStyle(SizeType.Percent,100));shell.RowStyles.Add(new RowStyle(SizeType.Absolute,34));Controls.Add(shell);
         shell.Paint+=delegate(object sender,PaintEventArgs e){HarborTheme.Frame(e.Graphics,shell.ClientRectangle,true,highContrast!=null&&highContrast.Checked);};
         var masthead=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,BackColor=HarborTheme.Header,Margin=Padding.Empty,Padding=new Padding(14,3,14,3)};
         masthead.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,48));masthead.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         masthead.Controls.Add(new HarborArtwork{LogoOnly=true,Dock=DockStyle.Fill,BackColor=HarborTheme.Header},0,0);
         masthead.Controls.Add(new Label{Text="CraftHarbor",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Segoe UI",24,FontStyle.Bold),ForeColor=Color.FromArgb(40,29,19),BackColor=HarborTheme.Header},1,0);shell.Controls.Add(masthead,0,0);
-        var body=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,256));body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));shell.Controls.Add(body,0,1);
+        var body=harborBody=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,256));body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));shell.Controls.Add(body,0,1);
         sidebarLayout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,BackColor=HarborTheme.Input,Padding=new Padding(14,18,14,12),Margin=Padding.Empty};
         sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,116));sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,100));sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,144));body.Controls.Add(sidebarLayout,0,0);
         var identity=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false};
@@ -52,7 +52,7 @@ partial class CraftHarbor
         harborHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));harborHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,372));
         harborHeader.RowStyles.Add(new RowStyle(SizeType.Percent,100));harborHeader.RowStyles.Add(new RowStyle(SizeType.Absolute,0));
         var titles=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Margin=Padding.Empty};
-        titles.RowStyles.Add(new RowStyle(SizeType.Absolute,26));titles.RowStyles.Add(new RowStyle(SizeType.Absolute,43));titles.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+        titles.RowStyles.Add(new RowStyle(SizeType.Absolute,26));titles.RowStyles.Add(new RowStyle(SizeType.Absolute,48));titles.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         pageHeading=HarborLabel(PageNames[0],12,false);pageHeading.ForeColor=Muted;pageHeading.Dock=DockStyle.Fill;titles.Controls.Add(pageHeading,0,0);
         dashboardTitle=HarborLabel(profile.Name,22,true);dashboardTitle.AutoSize=false;dashboardTitle.AutoEllipsis=true;dashboardTitle.Dock=DockStyle.Fill;titles.Controls.Add(dashboardTitle,0,1);
         profileSummary=HarborLabel(ProfileMetadata(),12,false);profileSummary.AutoSize=false;profileSummary.AutoEllipsis=true;profileSummary.Dock=DockStyle.Fill;profileSummary.ForeColor=Muted;titles.Controls.Add(profileSummary,0,2);
@@ -69,12 +69,12 @@ partial class CraftHarbor
         var status=new HarborFrame{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,BackColor=Card,Margin=new Padding(0,0,4,10)};
         status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
         status.Controls.Add(StatusColumn(serverState,new[]{start,stop},heapPreview),0,0);
-        hostingSummary=new Label{Dock=DockStyle.Fill,ForeColor=Muted,AutoEllipsis=true,Text=HostingName+" / 接続先を確認中"};
+        hostingSummary=new Label{Dock=DockStyle.Fill,ForeColor=Muted,Margin=Padding.Empty,AutoEllipsis=true,Text=HostingName+" / 接続先を確認中"};
         connect.Text="開始";disconnect.Text="停止";publicSettings.Text="設定";
         status.Controls.Add(StatusColumn(tunnelState,new[]{connect,disconnect,publicSettings},hostingSummary),1,0);dashboardRows.Controls.Add(status,0,0);((ActionButton)start).Primary=true;
         var join=new SurfaceTable{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,BackColor=Card,Padding=new Padding(12,8,12,8),Margin=new Padding(0,0,4,10)};
         join.RowStyles.Add(new RowStyle(SizeType.Absolute,28));join.RowStyles.Add(new RowStyle(SizeType.Percent,100));join.Controls.Add(HarborLabel("友達に渡す接続先",12,true),0,0);
-        var addressRow=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=4,RowCount=1,Margin=Padding.Empty};
+        addressRow=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=4,RowCount=1,Margin=Padding.Empty};
         addressRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));foreach(int width in new[]{112,100,188})addressRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,width));
         address.Dock=DockStyle.Fill;address.Margin=new Padding(0,0,8,0);addressRow.Controls.Add(address,0,0);
         for(int i=0;i<joinActions.Length;i++){joinActions[i].Dock=DockStyle.Fill;joinActions[i].Margin=new Padding(0,0,i==2?0:6,0);addressRow.Controls.Add(joinActions[i],i+1,0);}join.Controls.Add(addressRow,0,1);dashboardRows.Controls.Add(join,0,1);
@@ -97,7 +97,7 @@ partial class CraftHarbor
         historyAndLogs.Controls.Add(logs,1,0);dashboardRows.Controls.Add(historyAndLogs,0,3);
         oldDashboard.Dispose();
 
-        allow.Dock=DockStyle.Bottom;allow.Height=100;((FlowLayoutPanel)allow).WrapContents=true;workspace.TabPages[2].Controls.Add(allow);workspace.TabPages[2].Controls.SetChildIndex(allow,0);
+        var usersLayout=(TableLayoutPanel)workspace.TabPages[2].Controls[0];usersLayout.RowCount=4;usersLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,100));allow.Dock=DockStyle.Fill;((FlowLayoutPanel)allow).WrapContents=true;usersLayout.Controls.Add(allow,0,3);
         footerState=new Label{Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,ForeColor=Muted,Padding=new Padding(12,0,0,0),AutoEllipsis=true,AccessibleName="サーバーと公開接続の状態"};shell.Controls.Add(footerState,0,2);
         workspace.SelectedIndexChanged+=delegate{SelectHarborPage();};navigation[0].Selected=true;
         Resize+=delegate{ArrangeHarbor();};workspace.Resize+=delegate{ArrangeHarbor();};
@@ -106,14 +106,14 @@ partial class CraftHarbor
     {
         var column=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new Padding(8,2,8,2),Margin=Padding.Empty};
         column.RowStyles.Add(new RowStyle(SizeType.Absolute,36));column.RowStyles.Add(new RowStyle(SizeType.Absolute,58));column.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        state.AutoSize=false;state.Dock=DockStyle.Fill;state.Font=new Font("Yu Gothic UI",14,FontStyle.Bold);state.AutoEllipsis=true;column.Controls.Add(state,0,0);
+        state.Margin=Padding.Empty;state.AutoSize=false;state.Dock=DockStyle.Fill;state.Font=new Font("Yu Gothic UI",14,FontStyle.Bold);state.AutoEllipsis=true;column.Controls.Add(state,0,0);
         var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Margin=Padding.Empty};foreach(var button in buttons){button.AutoSize=true;button.Margin=new Padding(0,2,6,2);actions.Controls.Add(button);}column.Controls.Add(actions,0,1);
-        note.AutoSize=false;note.Dock=DockStyle.Fill;note.AutoEllipsis=true;note.Font=new Font("Yu Gothic UI",12);column.Controls.Add(note,0,2);return column;
+        note.Margin=Padding.Empty;note.AutoSize=false;note.Dock=DockStyle.Fill;note.AutoEllipsis=true;note.Font=new Font("Yu Gothic UI",12);column.Controls.Add(note,0,2);return column;
     }
     TableLayoutPanel MetricBand(Label[] values,string[] labels,bool small)
     {
         var band=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=values.Length,RowCount=1,Margin=Padding.Empty};
-        for(int i=0;i<values.Length;i++){band.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/values.Length));var tile=new SurfaceTable{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Padding=new Padding(10,4,8,4),BackColor=Card,Margin=new Padding(0,0,4,4)};tile.RowStyles.Add(new RowStyle(SizeType.Absolute,26));tile.RowStyles.Add(new RowStyle(SizeType.Percent,100));var caption=HarborLabel(labels[i],12,false);caption.AutoSize=false;caption.Dock=DockStyle.Fill;caption.AutoEllipsis=true;caption.ForeColor=Muted;tile.Controls.Add(caption,0,0);values[i].Font=new Font("Segoe UI",small?14:20,FontStyle.Bold);values[i].ForeColor=Ink;values[i].AutoEllipsis=true;values[i].Dock=DockStyle.Fill;tile.Controls.Add(values[i],0,1);band.Controls.Add(tile,i,0);}return band;
+        for(int i=0;i<values.Length;i++){band.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/values.Length));var tile=new SurfaceTable{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Padding=new Padding(10,4,8,4),BackColor=Card,Margin=new Padding(0,0,4,4)};tile.RowStyles.Add(new RowStyle(SizeType.Absolute,small?26:46));tile.RowStyles.Add(new RowStyle(SizeType.Percent,100));var caption=HarborLabel(labels[i],12,false);caption.AutoSize=false;caption.Dock=DockStyle.Fill;caption.AutoEllipsis=false;caption.ForeColor=Muted;tile.Controls.Add(caption,0,0);tips.SetToolTip(caption,labels[i]);values[i].Margin=Padding.Empty;values[i].Font=new Font("Segoe UI",small?14:20,FontStyle.Bold);values[i].ForeColor=Ink;values[i].AutoEllipsis=true;values[i].Dock=DockStyle.Fill;tile.Controls.Add(values[i],0,1);band.Controls.Add(tile,i,0);}return band;
     }
     void SelectHarborPage()
     {
@@ -150,28 +150,58 @@ partial class CraftHarbor
     {
         if(harborMain==null||arrangingHarbor)return;arrangingHarbor=true;
         try{
-            float factor=largeText!=null&&largeText.Checked?1.16f:1;
+            float dpi=DeviceDpi/96f;float factor=(largeText!=null&&largeText.Checked?1.16f:1)*dpi;
+            harborBody.ColumnStyles[0].Width=256*dpi;harborShell.RowStyles[0].Height=60*dpi;harborShell.RowStyles[2].Height=34*factor;
             bool compact=harborMain.ClientSize.Width<980*factor;
-            harborMain.RowStyles[0].Height=(compact?174:112)*factor;
+            bool dashboard=workspace.SelectedIndex<=0;headerActions.Visible=dashboard;pageHeading.Visible=dashboard;
+            harborMain.RowStyles[0].Height=(dashboard?(compact?158:112):96)*factor;
             harborHeader.SetCellPosition(headerActions,new TableLayoutPanelCellPosition(compact?0:1,compact?1:0));
             harborHeader.SetColumnSpan(headerActions,compact?2:1);
-            harborHeader.SetColumnSpan(harborHeader.Controls[0],compact?2:1);
-            harborHeader.RowStyles[1].Height=compact?58*factor:0;
+            harborHeader.SetColumnSpan(harborHeader.Controls[0],compact||!dashboard?2:1);
+            harborHeader.RowStyles[1].Height=compact&&dashboard?58*factor:0;
+            var titles=(TableLayoutPanel)harborHeader.Controls[0];titles.RowStyles[0].Height=dashboard?26*factor:0;titles.RowStyles[1].Height=48*factor;
+            for(int col=1;col<4;col++)addressRow.ColumnStyles[col].Width=new[]{112,104,192}[col-1]*factor;
             sidebarLayout.RowStyles[0].Height=116*factor;sidebarLayout.RowStyles[2].Height=100*factor;
             sidebarLayout.RowStyles[3].Height=sidebarLayout.ClientSize.Height<740*factor||highContrast.Checked?0:144;
             sidebarArt.Visible=sidebarLayout.RowStyles[3].Height>0;
             bool stacked=workspace.ClientSize.Width<1000*factor;
             var logs=historyAndLogs.Controls[1];historyAndLogs.SetCellPosition(logs,new TableLayoutPanelCellPosition(stacked?0:1,stacked?1:0));historyAndLogs.SetColumnSpan(logs,stacked?2:1);historyAndLogs.SetColumnSpan(historyAndLogs.Controls[0],stacked?2:1);
             historyAndLogs.RowStyles[1].Height=stacked?230*factor:0;
-            dashboardRows.RowStyles[0].Height=180*factor;dashboardRows.RowStyles[1].Height=104*factor;dashboardRows.RowStyles[2].Height=196*factor;dashboardRows.RowStyles[3].Height=(stacked?650:400)*factor;
+            dashboardRows.RowStyles[0].Height=(factor/dpi>1&&stacked?224:168)*factor;dashboardRows.RowStyles[1].Height=104*factor;dashboardRows.RowStyles[2].Height=224*factor;dashboardRows.RowStyles[3].Height=(stacked?650:378)*factor;
             dashboardRows.Height=(int)dashboardRows.RowStyles.Cast<RowStyle>().Sum(r=>r.Height)+8;
-            foreach(var page in workspace.TabPages.Cast<TabPage>())FitFlowRows(page);
-            ResizeProfileInputs();
+            foreach(var page in workspace.TabPages.Cast<TabPage>()){FitContentWidth(page,Math.Max(200,workspace.ClientSize.Width-36));FitFlowRows(page);}
+            foreach(int index in new[]{2,4,6}){var page=workspace.TabPages[index];var table=(TableLayoutPanel)page.Controls[0];page.AutoScroll=true;table.Dock=DockStyle.Top;table.Height=Math.Max(page.ClientSize.Height-page.Padding.Vertical-4,(int)table.RowStyles.Cast<RowStyle>().Where(r=>r.SizeType==SizeType.Absolute).Sum(r=>r.Height)+(int)(150*factor));}
         }finally{arrangingHarbor=false;}
     }
+
+    // Limit natural-width form controls to their available column, retaining vertical scrolling.
+    void FitContentWidth(Control parent,int available)
+    {
+        var parentFlow=parent as FlowLayoutPanel;
+        int room=parentFlow!=null&&parentFlow.Dock==DockStyle.Fill?Math.Max(180,parent.ClientSize.Width-parent.Padding.Horizontal-24):available;
+        foreach(Control child in parent.Controls){
+            int childRoom=Math.Max(120,room-child.Margin.Horizontal);
+            var frame=child as InputFrame;var label=child as Label;var check=child as HarborCheckBox;var flow=child as FlowLayoutPanel;
+            if(parentFlow!=null){
+                if(parentFlow.FlowDirection==FlowDirection.LeftToRight&&!parentFlow.WrapContents){
+                    var heading=parentFlow.Controls.OfType<Label>().FirstOrDefault();
+                    if(heading!=null&&child!=heading)childRoom=Math.Max(120,childRoom-heading.Width-heading.Margin.Horizontal);
+                }
+                if(frame!=null&&frame.Dock==DockStyle.None){int width;if(!baseWidths.TryGetValue(frame,out width)){width=frame.Width;baseWidths[frame]=width;}frame.Width=Math.Min(width,childRoom);}
+                if(label!=null&&label.AutoSize)label.MaximumSize=new Size(childRoom,0);
+                if(check!=null&&check.AutoSize)check.MaximumSize=new Size(childRoom,0);
+                if(flow!=null&&flow.AutoSize)flow.MaximumSize=new Size(childRoom,0);
+            }
+            if(frame==null)FitContentWidth(child,childRoom);
+        }
+    }
+
     void FitFlowRows(Control parent)
     {
-        foreach(Control child in parent.Controls){var flow=child as FlowLayoutPanel;
+        foreach(Control child in parent.Controls){
+            var label=child as Label;var owner=parent as TableLayoutPanel;
+            if(label!=null&&owner!=null&&label.Visible){int row=owner.GetRow(label);if(row>=0&&row<owner.RowStyles.Count&&owner.RowStyles[row].SizeType==SizeType.Absolute){int needed=label.AutoEllipsis?label.Font.Height:label.GetPreferredSize(new Size(Math.Max(60,label.Width),0)).Height;owner.RowStyles[row].Height=Math.Max(owner.RowStyles[row].Height,needed+label.Margin.Vertical);}}
+            var flow=child as FlowLayoutPanel;
             if(flow!=null&&flow.FlowDirection==FlowDirection.LeftToRight&&flow.Controls.OfType<Button>().Any()){
                 flow.WrapContents=true;
                 int available=Math.Max(120,flow.ClientSize.Width-flow.Padding.Horizontal);int x=0,y=0,line=0;
