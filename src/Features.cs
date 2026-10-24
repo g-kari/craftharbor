@@ -26,7 +26,7 @@ partial class CraftHarbor
     NumericUpDown maxPlayersSetting,viewSetting,simulationSetting,backupHours,backupKeep;
     CheckBox pvpSetting,flightSetting,autoCrashRestart;
     CheckBox scheduledRestart;
-    DateTimePicker restartTime;
+    HarborTimeField restartTime;
     DateTime lastSample=DateTime.MinValue,lastPoll=DateTime.MinValue,lastTps=DateTime.MinValue,lastMspt=DateTime.MinValue,lastScheduled=DateTime.MinValue;
     TimeSpan lastCpu;
     double cpuPercent,ramGiB,tps=double.NaN,mspt=double.NaN;
@@ -93,7 +93,7 @@ partial class CraftHarbor
         backupsGrid=Grid();backupsGrid.Columns.Add("path","ファイル名");backupsGrid.Columns.Add("date","作成日時");backupsGrid.Columns.Add("size","サイズ MiB");backupLayout.Controls.Add(backupsGrid,0,2);
         var backupActions=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=false };backup=FlowBtn(backupActions,"完全バックアップ",delegate { Backup(); });FlowBtn(backupActions,"一覧更新",delegate { RefreshBackups(); });FlowBtn(backupActions,"選択ZIPを復元",delegate { RestoreSelected(); });FlowBtn(backupActions,"自動保存先を開く",delegate { string d=Path.Combine(ServerDir,"backups");Directory.CreateDirectory(d);Open(d); });backupLayout.Controls.Add(backupActions,0,3);
         var automationPage=Page(tabs,"運用・スケジュール");var automation=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};automationPage.Controls.Add(automation);
-        autoCrashRestart=CheckSetting(automation,"異常終了時に自動再起動（1回の起動につき最大3回）");scheduledRestart=CheckSetting(automation,"毎日指定時刻に再起動（管理アプリ起動中のみ）");restartTime=new DateTimePicker {Format=DateTimePickerFormat.Custom,CustomFormat="HH:mm",ShowUpDown=true,Width=120,Value=DateTime.Today.AddHours(5)};automation.Controls.Add(restartTime);
+        autoCrashRestart=CheckSetting(automation,"異常終了時に自動再起動（1回の起動につき最大3回）");scheduledRestart=CheckSetting(automation,"毎日指定時刻に再起動（管理アプリ起動中のみ）");restartTime=new HarborTimeField {Value=DateTime.Today.AddHours(5)};automation.Controls.Add(restartTime);
         var autoActions=new FlowLayoutPanel {AutoSize=true};FlowBtn(autoActions,"運用設定を保存",delegate { SaveFeatureSettings();Add("[運用] 設定を保存しました。"); });FlowBtn(autoActions,"保存して再起動",delegate { RequestRestart(); });FlowBtn(autoActions,"全部停止",delegate { restartPending=false;StopTunnel();StopServer(); });automation.Controls.Add(autoActions);
         automation.Controls.Add(new Label{Text="再起動はワールド保存とプロセス終了を待ちます。予定再起動は60秒前にプレイヤーへ通知します。\r\nアプリ終了中・PCスリープ中は実行されません。異常終了時の自動再起動は初期状態で無効です。",AutoSize=true,ForeColor=Muted,MaximumSize=new Size(950,0)});
         var modsPage=Page(tabs,"MOD・導入案内");var modsLayout=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1};modsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,68));modsLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));modsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,44));modsPage.Controls.Add(modsLayout);

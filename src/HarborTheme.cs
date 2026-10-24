@@ -50,5 +50,7 @@ class HarborArtwork:Control
 }
 class HarborFrame:SurfaceTable
 {
+    public bool DivideColumns;
     public HarborFrame(){WoodFrame=true;Padding=new Padding(12);}
+    protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);if(!DivideColumns)return;var widths=GetColumnWidths();int x=Padding.Left;using(var pen=new Pen(HarborTheme.Contrast(this)?Color.White:HarborTheme.Border)){for(int i=0;i<widths.Length-1;i++){x+=widths[i];e.Graphics.DrawLine(pen,x,Padding.Top,x,Height-Padding.Bottom);}}}
 }

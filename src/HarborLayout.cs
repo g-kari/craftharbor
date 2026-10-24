@@ -66,7 +66,7 @@ partial class CraftHarbor
         dashboardRows=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=860,Margin=Padding.Empty};
         foreach(int h in new[]{180,104,196,376})dashboardRows.RowStyles.Add(new RowStyle(SizeType.Absolute,h));
         dashboard.Controls.Add(dashboardRows);
-        var status=new HarborFrame{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,BackColor=Card,Margin=new Padding(0,0,4,10)};
+        var status=new HarborFrame{DivideColumns=true,Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,BackColor=Card,Margin=new Padding(0,0,4,10)};
         status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));status.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
         status.Controls.Add(StatusColumn(serverState,new[]{start,stop},heapPreview),0,0);
         hostingSummary=new Label{Dock=DockStyle.Fill,ForeColor=Muted,Margin=Padding.Empty,AutoEllipsis=true,Text=HostingName+" / 接続先を確認中"};
@@ -118,7 +118,7 @@ partial class CraftHarbor
     void SelectHarborPage()
     {
         if(pageHeading==null||workspace.SelectedIndex<0)return;pageHeading.Text=PageNames[workspace.SelectedIndex];dashboardTitle.Text=workspace.SelectedIndex==0?profile.Name:PageNames[workspace.SelectedIndex];
-        tips.SetToolTip(dashboardTitle,profile.Name);for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==workspace.SelectedIndex;navigation[i].AccessibleDescription=(navigation[i].Selected?"現在の画面。":"画面へ移動。")+"Alt+"+(i+1);navigation[i].Invalidate();}if(workspace.SelectedIndex==7)RefreshGuide();ArrangeHarbor();
+        tips.SetToolTip(dashboardTitle,profile.Name);for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==workspace.SelectedIndex;navigation[i].AccessibleDescription=(navigation[i].Selected?"現在の画面。":"画面へ移動。")+"Alt+"+(i+1);navigation[i].Invalidate();}if(workspace.SelectedIndex==7)RefreshGuide();ArrangeHarbor();((ScrollableControl)navigation[workspace.SelectedIndex].Parent).ScrollControlIntoView(navigation[workspace.SelectedIndex]);
     }
     void RefreshRecentLogs()
     {

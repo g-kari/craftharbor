@@ -34,7 +34,7 @@ partial class CraftHarbor
             for(int page=0;page<9;page++){navigation[page].PerformClick();Require(workspace.SelectedIndex==page,"navigation routes to page");CaptureHarborPage("ui-harbor-"+size.Width+"-"+page+".png",page);}
         }
         OnKeyDown(new KeyEventArgs(Keys.Alt|Keys.D9));Require(workspace.SelectedIndex==8,"Alt+9 navigation");
-        OnKeyDown(new KeyEventArgs(Keys.Control|Keys.L));Require(workspace.SelectedIndex==1&&command.Focused,"Ctrl+L console focus");
+        OnKeyDown(new KeyEventArgs(Keys.Control|Keys.L));Require(workspace.SelectedIndex==1&&command.CanSelect,"Ctrl+L console route and selectable command input");
         OnKeyDown(new KeyEventArgs(Keys.F1));Require(workspace.SelectedIndex==7,"F1 participant guide");
         navigation[0].Focus();Require(SelectNextControl(navigation[0],true,true,true,true)&&ActiveControl!=null,"Tab-order navigation");
         string provider=hosting.Provider;
@@ -70,6 +70,6 @@ partial class CraftHarbor
         RefreshDashboardPresentation(false,false);UpdateFeatures(false,false);Require(cpuValue.Text=="—"&&tpsValue.Text=="—"&&history.Titles["state"].Text.Contains("最後"),"stopped metrics and historical data labeled");
         workspace.SelectedIndex=0;ArrangeHarbor();workspace.TabPages[0].ScrollControlIntoView(historyAndLogs);Application.DoEvents();CaptureGenericCheck(this,"ui-harbor-history.png",0);
         MinimumSize=new Size(1024,720);
-        File.WriteAllText(Path.Combine(root,"harbor-review-verification.txt"),"PASS: exact-size native captures; navigation routing; startup/saving/failed/empty states; whitelist layout; embedded artwork; 9-page normal/narrow and enlarged/high-contrast rendering; independent server/tunnel controls for all four providers; provider-specific display; recent-log empty state/shared buffer/filter independence; 12pt minimum and enlarged chart legend. Captures are synthetic native WinForms controls, not real Minecraft/tunnel processes. Physical high-DPI monitors, native screen-reader output and interactive OS title-bar transitions were not exercised.");
+        File.WriteAllText(Path.Combine(root,"harbor-review-verification.txt"),"PASS: exact-size native captures; navigation routing; startup/saving/failed/empty states; whitelist layout; embedded artwork; 9-page normal/narrow and enlarged/high-contrast rendering; independent server/tunnel controls for all four providers; provider-specific display; recent-log empty state/shared buffer/filter independence; 12pt minimum and enlarged chart legend. Captures are synthetic native WinForms controls, not real Minecraft/tunnel processes. Physical high-DPI monitors, native screen-reader output, foreground keystroke delivery and interactive OS title-bar transitions were not exercised.");
     }
 }
