@@ -2,16 +2,19 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 partial class CraftHarbor
 {
+    [DllImport("user32.dll",EntryPoint="SetWindowPos",SetLastError=true)]
+    static extern bool SetReviewWindowPos(IntPtr window,IntPtr after,int x,int y,int width,int height,uint flags);
     void SetReviewSize(Size size)
     {
-        // A hosted runner has a small desktop. The minimum permits an off-screen native
-        // form at the requested size; DrawToBitmap renders its full client area.
-        MinimumSize=size;Size=size;Application.DoEvents();ArrangeHarbor();
-        Require(Width==size.Width&&Height==size.Height,"requested native capture size "+size);
+        // A hosted runner's small desktop caps Form.Size in SetBoundsCore. Size this
+        // synthetic window directly; no display settings or production window behavior changes.
+        Require(SetReviewWindowPos(Handle,IntPtr.Zero,0,0,size.Width,size.Height,0x416),"native review window sizing");Application.DoEvents();ArrangeHarbor();
+        Require(Width==size.Width&&Height==size.Height,"requested native capture size "+size+", actual "+Size);
     }
     void CaptureHarborPage(string name,int page)
     {

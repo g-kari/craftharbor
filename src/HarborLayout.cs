@@ -161,7 +161,7 @@ partial class CraftHarbor
             harborHeader.RowStyles[1].Height=compact&&dashboard?58*factor:0;
             var titles=(TableLayoutPanel)harborHeader.Controls[0];titles.RowStyles[0].Height=dashboard?26*factor:0;titles.RowStyles[1].Height=48*factor;
             for(int col=1;col<4;col++)addressRow.ColumnStyles[col].Width=new[]{112,104,192}[col-1]*factor;
-            sidebarLayout.RowStyles[0].Height=116*factor;sidebarLayout.RowStyles[2].Height=100*factor;
+            sidebarLayout.RowStyles[0].Height=100*factor;sidebarLayout.RowStyles[2].Height=88*factor;
             sidebarLayout.RowStyles[3].Height=sidebarLayout.ClientSize.Height<740*factor||highContrast.Checked?0:144;
             sidebarArt.Visible=sidebarLayout.RowStyles[3].Height>0;
             bool stacked=workspace.ClientSize.Width<1000*factor;
