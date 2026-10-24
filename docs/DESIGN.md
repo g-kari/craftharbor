@@ -1,22 +1,31 @@
-# CraftHarbor UI
+# CraftHarbor UI — lighthouse and harbor
 
-目的: サーバーを選び、稼働状態を把握し、必要な操作へすぐ移動できるWindows管理画面。
+The approved October 2026 app design takes precedence over the former navy/mint design. C#, Windows Forms and .NET Framework 4.8 remain the implementation.
 
-配色: harbor navy #101923、panel slate #1C2936、mint #85E5CE、text #ECF3F6、muted #AFBECC、focus gold #F1D778。色に加えて文字とアイコンで状態を伝える。
+## Shared visual system
 
-文字: 日本語の操作と説明はYu Gothic UI。製品名・数値はSegoe UI。コンソールだけConsolas。
-本文・入力・ボタンは12pt（96dpiで約16px）以上を基準にし、グラフの凡例と目盛りも12ptに揃える。文字拡大時はさらに1.16倍。入力欄は文字に応じて高さを確保し、操作ボタンは内容に応じて伸縮する。狭い画面では操作列を折り返す。
+`HarborTheme` owns the palette: cream header #F7EED8, navy workspace #14212A, panels #1E303A, green primary/selected controls #345F2C, wood trim #A67C4A, body text #F2F0E6. Muted text is #BBCBD0; borders #506976; focus #F2D28A. The primary green is a surface, not small text on navy. Selection also has an inset border and light vertical marker. Keyboard focus has a dotted outline.
 
-構成: 左にサーバーの選択と画面ナビ。上に現在のサーバーと主操作。ダッシュボードでは稼働・公開先・メトリクスを表示し、設定やバックアップでは編集領域を広くする。
+`ActionButton`, `SurfacePanel`, `SurfaceTable`, `HarborFrame`, `InputFrame`, `HarborChoice`, `HarborCheckBox` and `HarborNumber` provide shared treatment across pages and dialogs. Frames are thin and corners modestly pixel-shaped. Pixel artwork is reserved for the logo and decoration; no rendered mockup is used as a UI background.
 
-```text
-サーバー選択 | 現在の画面 / サーバー名        起動・案内
-画面ナビ     | 稼働状態       公開方法         (dashboard)
-             | 接続先                         (dashboard)
-             | 画面ごとの作業領域
-表示設定     |
-```
+Yu Gothic UI is used for Japanese text and normal readable fonts for metrics, input and charts. Body text, buttons, input and chart labels are at least 12pt, with a 1.16× large-text setting. The native Windows title bar, resize borders and normal window controls remain intact; the cream masthead is part of the client area.
 
-汎用カードの積み重ねを避け、選択中のサーバーを軸に操作をまとめる。角丸は操作ボタン8px、稼働・メトリクス領域12px。余白は8px基準。高コントラストと文字拡大、既存ショートカットを維持する。
+## Navigation and hierarchy
 
-キーボード: Alt+1〜9で画面を切り替え、Ctrl+Lでコマンド入力、F1で参加案内へ移動する。読み取り専用の一覧は矢印キーで行を選び、Tabで次の操作へ移動する。ダイアログはEscで閉じる。取り込み画面は既存のキャンセルボタンへ渡し、処理中の中止を維持する。一覧には用途を表すアクセシビリティ名を付け、共通スタイルで上書きしない。
+The sidebar retains the current server, server list, nine page destinations, large text and high contrast. Its navigation scrolls when needed. The harbor illustration is omitted when height is insufficient and in high contrast.
+
+The dashboard has the server identity and main actions, independent game/public-connection controls, shareable address, four primary metrics, three secondary metrics, CPU/RAM history and recent logs, then metric actions. The chart and recent logs are side by side at wide widths and stacked at narrower widths. The dashboard scrolls as a whole. Forms and table pages retain their working area and wrap action rows instead of forcing identical card layouts.
+
+## Data and states
+
+All identity, version, provider, endpoint and metric values come from existing workspace/runtime data. Public provider names are never fixed to playit. Server and tunnel running states are independent; a stopped server with a running tunnel enables server start and tunnel stop.
+
+Recent logs use the same bounded `logRecords` collection as the console and show its last ten records across all sources, independent of the console filter. An empty view explains that no logs have arrived. No separate collector or fake runtime data is added.
+
+The existing metric cadence, staleness rule, 300-point/five-minute chart window and CSV source are unchanged. Stopped/unavailable metric values remain —. Retained graph points explicitly say they were collected before stopping. Startup, saving/stopping, missing addresses, unavailable integrations and failures keep their descriptive text.
+
+## Accessibility and verification
+
+Alt+1–9, Ctrl+L, F1, native Tab navigation and dialog Escape behavior remain. Focus and selected state do not rely on color alone. High contrast removes decorative art, uses white/black controls, and updates tables, chart text and distinct graph series. Font scaling also applies to the chart.
+
+Cloud Windows CI uses the repository build/core/integration/UI checks. Synthetic captures cover nine pages, normal/narrow/large/high-contrast layouts, publishing methods and dialogs, plus independent status combinations and recent-log behavior. Size/font scaling simulations are distinct from physical high-DPI display tests; native multi-monitor transitions and screen-reader output must not be claimed from synthetic captures. See the PR verification notes for observed results and remaining limitations.

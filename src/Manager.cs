@@ -27,7 +27,7 @@ partial class CraftHarbor : Form
     NumericUpDown memory;
     Button start, stop, connect, disconnect, backup;
     System.Windows.Forms.Timer timer;
-    static readonly Color Bg = Color.FromArgb(16,25,35), Card = Color.FromArgb(28,41,54), Ink = Color.FromArgb(236,243,246), Muted = Color.FromArgb(175,190,204), Accent = Color.FromArgb(133,229,206);
+    static readonly Color Bg = HarborTheme.Background, Card = HarborTheme.Panel, Ink = HarborTheme.Text, Muted = HarborTheme.Muted, Accent = HarborTheme.Live;
     string ServerDir { get { return Path.Combine(root,"server"); } }
     string PlayitDir { get { return Path.Combine(root,"playit"); } }
     string Settings { get { return Path.Combine(root,"manager-settings.txt"); } }
@@ -111,7 +111,7 @@ partial class CraftHarbor : Form
         joinRow.Controls.Add(address,0,0);
         var copy=Btn(joinRow,"コピー",0,0,90,delegate { if(address.Text.Trim().Length>0) Clipboard.SetText(address.Text.Trim()); });copy.Dock=DockStyle.Fill;copy.Margin=new Padding(0,0,6,0);
         var save=Btn(joinRow,"保存",0,0,80,delegate { SaveSettings(); Add("[管理] 接続先を保存しました。"); });save.Dock=DockStyle.Fill;save.Margin=new Padding(0,0,6,0);
-        var claim=Btn(joinRow,"アカウント連携",0,0,150,delegate { if(claimUrl.Length>0) Open(claimUrl); else { Open("https://playit.gg/account"); Add("[案内] 未連携なら『接続を開始』を押し、ログに表示される登録URLを開いてください。"); } });claim.Dock=DockStyle.Fill;claim.Margin=new Padding(0);
+        var claim=Btn(joinRow,"アカウント連携",0,0,150,delegate { OpenHostingAccount(); });claim.Dock=DockStyle.Fill;claim.Margin=new Padding(0);
         join.Controls.Add(joinRow);
         outer.Controls.Add(join,0,2);
         var tools = new FlowLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(0,9,0,0), WrapContents=false };
@@ -125,10 +125,10 @@ partial class CraftHarbor : Form
         var logs = new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=3 };
         logs.RowStyles.Add(new RowStyle(SizeType.Absolute,36)); logs.RowStyles.Add(new RowStyle(SizeType.Percent,100));logs.RowStyles.Add(new RowStyle(SizeType.Absolute,76));
         detail = new Label { Text="自分は localhost:"+ServerPort+" に接続。友達には公開接続先を共有します。", ForeColor=Muted,Dock=DockStyle.Fill,AutoEllipsis=true }; logs.Controls.Add(detail,0,0);
-        log=new TextBox { Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,BackColor=Color.FromArgb(11,16,24),ForeColor=Ink,Font=new Font("Consolas",10),BorderStyle=BorderStyle.FixedSingle }; logs.Controls.Add(log,0,1);
+        log=new TextBox { Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,BackColor=HarborTheme.Input,ForeColor=Ink,Font=new Font("Consolas",10),BorderStyle=BorderStyle.FixedSingle }; logs.Controls.Add(log,0,1);
         var cmdPanel=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Padding=new Padding(0,6,0,0) };cmdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));cmdPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,110));
         command=new TextBox { Dock=DockStyle.Fill,BackColor=Card,ForeColor=Ink,Font=new Font("Consolas",11) };cmdPanel.Controls.Add(command,0,0);
-        var send=new Button { Text="送信",Dock=DockStyle.Fill,FlatStyle=FlatStyle.Flat,BackColor=Card };send.Click+=delegate { SendCommand(); };cmdPanel.Controls.Add(send,1,0);
+        var send=new ActionButton { Text="送信",Dock=DockStyle.Fill,FlatStyle=FlatStyle.Flat,BackColor=Card };send.Click+=delegate { SendCommand(); };cmdPanel.Controls.Add(send,1,0);
         command.KeyDown+=delegate(object s,KeyEventArgs e) { if(e.KeyCode==Keys.Enter) { SendCommand(); e.SuppressKeyPress=true; } }; logs.Controls.Add(cmdPanel,0,2);outer.Controls.Add(logs,0,4);
         var allow = new FlowLayoutPanel { Dock=DockStyle.Fill,Padding=new Padding(0,10,0,0),WrapContents=false };
         allow.Controls.Add(new Label { Text="参加許可リスト",AutoSize=true,Margin=new Padding(0,5,12,0),ForeColor=Muted });
@@ -144,8 +144,8 @@ partial class CraftHarbor : Form
         AttachPersistentHost();
         timer=new System.Windows.Forms.Timer { Interval=400 };timer.Tick+=delegate { TickState(); };timer.Start();
         FormClosing+=OnClosing;
-        Add("[案内] ①サーバー起動 → ②参加ユーザーを許可 → ③接続を開始 → ④playitでMinecraft Javaトンネルを作成。");
-        Add("[playit設定] ローカル接続先は 127.0.0.1:"+ServerPort+"。発行された公開アドレスを上に保存してください。");
+        Add("[案内] サーバーを起動し、参加ユーザーを許可してください。公開方法は「"+HostingName+"」です。");
+        Add("[公開] サーバーのポートは "+ServerPort+"。接続先を取得または保存して友達へ共有してください。");
         Add("[案内] バックアップはサーバー停止中に作成します。管理画面を閉じてもサーバーは稼働を続けます。");
     }
     Panel PanelCard() { return new SurfacePanel { Dock=DockStyle.Fill,BackColor=Card,Margin=new Padding(0,0,10,8) }; }
@@ -209,10 +209,7 @@ partial class CraftHarbor : Form
         PollPersistentHost();string s;var incoming=new System.Collections.Generic.List<string>();int count=0;while(count++<400&&queue.TryDequeue(out s))incoming.Add(s);AppendLogRecords(incoming);
         bool sr=Running(server),tr=Running(tunnel);
         UpdateFeatures(sr,tr);
-        serverState.Text="サーバー："+(preparingServer?"Javaを確認中…":sr?(stopping?"保存・停止中":ready?"稼働中":"起動中…"):"停止中");
-        serverState.ForeColor=sr&&ready?Accent:Ink;
-        RefreshHosting();ApplyDiscoveredAddresses();tunnelState.Text=HostingName+"："+(tr?"実行中":"停止中");
-        start.Enabled=!sr&&!preparingServer&&!backupBusy&&!closing;stop.Enabled=sr&&!stopping;connect.Enabled=!tr&&!closing;disconnect.Enabled=tr;backup.Enabled=!sr&&!preparingServer&&!backupBusy&&!closing;memory.Enabled=!sr&&!preparingServer&&!autoMemory.Checked;
+        RefreshHosting();ApplyDiscoveredAddresses();RefreshDashboardPresentation(sr,tr);
         if(stopping && sr && (DateTime.UtcNow-stopAt).TotalSeconds>120) detail.Text="停止に時間がかかっています。保存中の可能性があるため、そのまま待機しています。";
         if(closing&&!backupBusy&&DiscordDrainedForExit()) { quitting=true;Close(); }
     }

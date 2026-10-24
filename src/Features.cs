@@ -58,11 +58,11 @@ partial class CraftHarbor
         history=new Chart { Dock=DockStyle.Fill,BackColor=Card,BorderlineColor=Muted };
         var area=new ChartArea("usage") { BackColor=Card };
         area.AxisX.LabelStyle.ForeColor=Muted;area.AxisX.MajorGrid.Enabled=false;area.AxisX.LabelStyle.Format="HH:mm:ss";
-        area.AxisY.LabelStyle.ForeColor=Accent;area.AxisY.Title="CPU %";area.AxisY.TitleForeColor=Accent;area.AxisY.Minimum=0;area.AxisY.Maximum=100;area.AxisY.MajorGrid.LineColor=Color.FromArgb(48,58,73);
-        area.AxisY2.Enabled=AxisEnabled.True;area.AxisY2.LabelStyle.ForeColor=Color.CornflowerBlue;area.AxisY2.Title="RAM GiB";area.AxisY2.TitleForeColor=Color.CornflowerBlue;area.AxisY2.Minimum=0;area.AxisY2.MajorGrid.Enabled=false;
+        area.AxisY.LabelStyle.ForeColor=Accent;area.AxisY.Title="CPU %";area.AxisY.TitleForeColor=Accent;area.AxisY.Minimum=0;area.AxisY.Maximum=100;area.AxisY.MajorGrid.LineColor=HarborTheme.Border;
+        area.AxisY2.Enabled=AxisEnabled.True;area.AxisY2.LabelStyle.ForeColor=HarborTheme.Blue;area.AxisY2.Title="RAM GiB";area.AxisY2.TitleForeColor=HarborTheme.Blue;area.AxisY2.Minimum=0;area.AxisY2.MajorGrid.Enabled=false;
         history.ChartAreas.Add(area);
         history.Series.Add(new Series("CPU %") { ChartType=SeriesChartType.FastLine,Color=Accent,BorderWidth=2,XValueType=ChartValueType.DateTime });
-        history.Series.Add(new Series("RAM GiB") { ChartType=SeriesChartType.FastLine,Color=Color.CornflowerBlue,BorderWidth=2,YAxisType=AxisType.Secondary,XValueType=ChartValueType.DateTime });
+        history.Series.Add(new Series("RAM GiB") { ChartType=SeriesChartType.FastLine,Color=HarborTheme.Blue,BorderWidth=2,YAxisType=AxisType.Secondary,XValueType=ChartValueType.DateTime });
         history.Legends.Add(new Legend { BackColor=Card,ForeColor=Ink,Docking=Docking.Top });InitializeMetricChart();dash.Controls.Add(history,0,1);
         metricsNote=new Label { Text="CPU・RAMは1秒ごと、TPS・MSPT・参加者は15秒ごと。停止中や未取得の値は — と表示します。",Dock=DockStyle.Fill,ForeColor=Muted,AutoEllipsis=true };dash.Controls.Add(metricsNote,0,2);
         var metricActions=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=false };
@@ -105,7 +105,7 @@ partial class CraftHarbor
     {
         var card=new SurfaceTable{Dock=DockStyle.Fill,BackColor=Card,RowCount=2,ColumnCount=1,Margin=new Padding(0,0,10,10),Padding=new Padding(14,10,14,10)};card.RowStyles.Add(new RowStyle(SizeType.Absolute,24));card.RowStyles.Add(new RowStyle(SizeType.Percent,100));card.Controls.Add(new Label{Text=title,Dock=DockStyle.Fill,ForeColor=Muted,Font=new Font("Yu Gothic UI",9)},0,0);var value=new Label{Text="—",Dock=DockStyle.Fill,ForeColor=Accent,Font=new Font("Segoe UI",20,FontStyle.Bold)};card.Controls.Add(value,0,1);panel.Controls.Add(card,column,0);return value;
     }
-    DataGridView Grid() { return new DataGridView {Dock=DockStyle.Fill,ReadOnly=true,StandardTab=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,BackgroundColor=Card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Card,ForeColor=Ink},DefaultCellStyle=new DataGridViewCellStyle{BackColor=Bg,ForeColor=Ink,SelectionBackColor=Color.FromArgb(50,90,94),SelectionForeColor=Color.White}}; }
+    DataGridView Grid() { return new DataGridView {Dock=DockStyle.Fill,ReadOnly=true,StandardTab=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,BackgroundColor=Card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Card,ForeColor=Ink},DefaultCellStyle=new DataGridViewCellStyle{BackColor=Bg,ForeColor=Ink,SelectionBackColor=HarborTheme.Primary,SelectionForeColor=Color.White}}; }
     static TextBox Input(Control p,int width) {var t=new TextBox{Width=width,BackColor=Card,ForeColor=Ink,Margin=new Padding(0,5,10,0)};p.Controls.Add(t);return t;}
     static FlowLayoutPanel SettingRow(Control p,string title) {var row=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Margin=new Padding(0,0,0,6)};row.Controls.Add(new Label{Text=title,AutoSize=true,MinimumSize=new Size(220,48),MaximumSize=new Size(220,0),TextAlign=ContentAlignment.MiddleLeft,Margin=new Padding(0,0,6,0)});p.Controls.Add(row);return row;}
     static TextBox TextSetting(Control p,string title,int width) {return Input(SettingRow(p,title),width);}

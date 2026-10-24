@@ -41,6 +41,10 @@ jobs:
           ./tools/check-ui.ps1 -Scenario vanilla
           ./tools/check-ui.ps1 -Scenario modpack
           ./tools/check-ui.ps1 -Scenario argfile
+      - name: Expose synthetic UI review images
+        if: always()
+        shell: powershell
+        run: ./tools/report-ui.ps1
       - name: Prepare verified Inno Setup compiler
         shell: powershell
         run: ./tools/install-inno.ps1
@@ -68,6 +72,7 @@ jobs:
             work/installer-check-*/installer-verification.txt
             work/ui-fixture-*/experience-verification.txt
             work/ui-fixture-*/ui-review-verification.txt
+            work/ui-fixture-*/harbor-review-verification.txt
             work/ui-fixture-*/ui-*.png
           if-no-files-found: error
           retention-days: 14
