@@ -1,9 +1,9 @@
-#define AppVersion "0.3.1-preview"
+#define AppVersion "0.4.0-preview"
 [Setup]
 AppId={{3B9C29C1-CC53-49D4-9B35-EA0D4835CB08}
 AppName=CraftHarbor
 AppVersion={#AppVersion}
-VersionInfoVersion=0.3.1.0
+VersionInfoVersion=0.4.0.0
 AppPublisher=g-kari
 AppPublisherURL=https://github.com/g-kari/craftharbor
 AppSupportURL=https://github.com/g-kari/craftharbor/issues
@@ -13,11 +13,11 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern dark
-SetupIconFile=..\assets\craftharbor.ico
+SetupIconFile=..\dist\icons\craftharbor.ico
 UninstallDisplayIcon={app}\CraftHarbor.exe
 LicenseFile=..\LICENSE
 OutputDir=..\dist
-OutputBaseFilename=setup
+OutputBaseFilename=CraftHarbor-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 CloseApplications=no
@@ -37,10 +37,14 @@ DialogFontSize=12
 [Tasks]
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する"; Flags: unchecked
 
+[InstallDelete]
+; Remove only the obsolete launcher owned by older CraftHarbor installations.
+Type: files; Name: "{app}\uninstall.exe"
+
 [Files]
 Source: "..\dist\CraftHarbor.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\CraftHarbor.Host.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\dist\uninstall.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\CraftHarbor-Uninstall-{#AppVersion}.exe"; DestDir: "{app}"; DestName: "CraftHarbor-Uninstall.exe"; Flags: ignoreversion
 Source: "..\dist\icons\craftharbor.ico"; DestDir: "{app}\icons"; Flags: ignoreversion
 Source: "..\dist\recipes\server-packs.json"; DestDir: "{app}\recipes"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion

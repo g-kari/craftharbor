@@ -14,7 +14,7 @@ partial class CraftHarbor
     static int LogChannel(string line){if(line.StartsWith("[MC]",StringComparison.Ordinal)||line.StartsWith("> ",StringComparison.Ordinal))return 1;if(line.StartsWith("[playit]",StringComparison.OrdinalIgnoreCase)||line.StartsWith("[ngrok]",StringComparison.OrdinalIgnoreCase)||line.StartsWith("[公開",StringComparison.Ordinal)||line.StartsWith("[音声]",StringComparison.Ordinal)||line.StartsWith("[playit設定]",StringComparison.Ordinal))return 2;return 3;}
     bool LogVisible(string line){return logSourceFilter==null||logSourceFilter.SelectedIndex<=0||LogChannel(line)==logSourceFilter.SelectedIndex;}
     void AppendLogRecords(IEnumerable<string> lines){var incoming=lines.ToArray();if(incoming.Length==0)return;logRecords.AddRange(incoming);if(logRecords.Count>4000){logRecords.RemoveRange(0,logRecords.Count-4000);RebuildLogView();return;}var selected=incoming.Where(LogVisible).ToArray();if(selected.Length>0)log.AppendText(string.Join(Environment.NewLine,selected)+Environment.NewLine);if(log.TextLength>500000){while(logRecords.Count>0&&log.TextLength>500000){logRecords.RemoveRange(0,Math.Min(100,logRecords.Count));log.Text=string.Join(Environment.NewLine,logRecords.Where(LogVisible));}}UpdateLogCount();}
-    void UpdateLogCount(){if(logCounter!=null)logCounter.Text=logRecords.Count(LogVisible)+" / "+logRecords.Count+"件を表示";}
+    void UpdateLogCount(){RefreshRecentLogs();if(logCounter!=null)logCounter.Text=logRecords.Count(LogVisible)+" / "+logRecords.Count+"件を表示";}
     void RebuildLogView(){if(log==null)return;log.Text=string.Join(Environment.NewLine,logRecords.Where(LogVisible));log.SelectionStart=log.TextLength;log.ScrollToCaret();UpdateLogCount();}
     Control LogHeader(Control searchActions)
     {

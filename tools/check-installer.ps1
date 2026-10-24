@@ -7,12 +7,17 @@ $registryPath='HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{3B9C29
 if(Test-Path -LiteralPath $registryPath){throw 'An existing CraftHarbor installation is present; skip isolated installer test to preserve it.'}
 $shortcut=Join-Path ([Environment]::GetFolderPath('Programs')) 'CraftHarbor.lnk'
 if(Test-Path -LiteralPath $shortcut){throw 'An existing Start menu shortcut is present; skip isolated installer test to preserve it.'}
-$setup=Join-Path $repoRoot 'dist\setup.exe'
+$version=(Get-Content -LiteralPath (Join-Path $repoRoot 'release.json') -Raw | ConvertFrom-Json).version
+$setup=Join-Path $repoRoot ("dist\CraftHarbor-Setup-"+$version+'.exe')
+New-Item -ItemType Directory -Path $fixture -Force | Out-Null
+[IO.File]::WriteAllText((Join-Path $fixture 'uninstall.exe'),'synthetic obsolete CraftHarbor launcher')
 $process=Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',('/DIR="'+$fixture+'"'),'/TASKS=""') -WindowStyle Hidden -Wait -PassThru
 if($process.ExitCode -ne 0){throw "Setup failed: $($process.ExitCode)"}
-foreach($file in @('CraftHarbor.exe','CraftHarbor.Host.exe','uninstall.exe','unins000.exe','recipes\server-packs.json')){if(-not(Test-Path -LiteralPath (Join-Path $fixture $file))){throw "Installed file missing: $file"}}
+foreach($file in @('CraftHarbor.exe','CraftHarbor.Host.exe','CraftHarbor-Uninstall.exe','unins000.exe','recipes\server-packs.json')){if(-not(Test-Path -LiteralPath (Join-Path $fixture $file))){throw "Installed file missing: $file"}}
 if((Get-FileHash -LiteralPath (Join-Path $fixture 'CraftHarbor.exe')).Hash -ne (Get-FileHash -LiteralPath (Join-Path $repoRoot 'dist\CraftHarbor.exe')).Hash){throw 'Installed application hash differs.'}
 if(-not(Test-Path -LiteralPath $registryPath)){throw 'Installed-apps registration missing.'}
+if(Test-Path -LiteralPath (Join-Path $fixture 'uninstall.exe')){throw 'Obsolete generic launcher was not removed.'}
+if((Get-FileHash -LiteralPath (Join-Path $fixture 'CraftHarbor-Uninstall.exe')).Hash -ne (Get-FileHash -LiteralPath (Join-Path $repoRoot ("dist\CraftHarbor-Uninstall-"+$version+'.exe'))).Hash){throw 'Installed branded uninstall launcher differs.'}
 $world=Join-Path $fixture 'server\world\keep.txt'
 New-Item -ItemType Directory -Path (Split-Path $world -Parent) -Force | Out-Null
 [IO.File]::WriteAllText($world,'synthetic workspace data must survive uninstall')
@@ -27,6 +32,6 @@ if(Test-Path -LiteralPath (Join-Path $fixture 'CraftHarbor.exe')){throw 'Applica
 if(-not(Test-Path -LiteralPath $world)-or-not(Test-Path -LiteralPath $privateMarker)){throw 'User data was removed by uninstall.'}
 if(Test-Path -LiteralPath $registryPath){throw 'Uninstall registration was not removed.'}
 Remove-Item -LiteralPath $privateMarker
-$report='PASS: per-user setup installed matching app/host/recipe/uninstall files and registered the app; uninstall removed owned binaries and registration while retaining a synthetic world and user settings. Only an isolated workspace fixture was installed.'
+$report='PASS: per-user setup installed matching app/host/recipe/branded-uninstall files, removed the obsolete generic launcher and registered the app; uninstall removed owned binaries and registration while retaining a synthetic world and user settings. Only an isolated workspace fixture was installed.'
 [IO.File]::WriteAllText((Join-Path $fixture 'installer-verification.txt'),$report)
 Write-Output $report

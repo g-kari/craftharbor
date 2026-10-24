@@ -22,9 +22,15 @@ SignPathへの申請は行っておらず、現時点では申請を予定して
 - 直接ダウンロードURLからのサーバー用ZIP取り込み。SHA-256検証、進捗、中止、入れ子フォルダーの認識、Create: Astralの入力例。
 - playit.gg・ngrok・直接公開・任意のポート開放ツールをサーバーごとに選択。
 
+## ダウンロード
+
+**[v0.4.0-preview の CraftHarbor-Setup-0.4.0-preview.exe](https://github.com/g-kari/craftharbor/releases/download/v0.4.0-preview/CraftHarbor-Setup-0.4.0-preview.exe)** · [リリースとポータブル版](https://github.com/g-kari/craftharbor/releases/tag/v0.4.0-preview)
+
+灯台・港の新UIと24種類のアイコンを追加しました。[変更前後の比較](https://github.com/g-kari/craftharbor/blob/main/docs/UI_COMPARISON.md)で確認できます。
+
 ## インストールと継続運転
 
-`setup.exe`はこのWindowsユーザーの`%LOCALAPPDATA%/Programs/CraftHarbor`へインストールし、スタートメニューへショートカットを追加します。デスクトップへの追加は任意です。管理者権限は不要です。
+`CraftHarbor-Setup-0.4.0-preview.exe`はこのWindowsユーザーの`%LOCALAPPDATA%/Programs/CraftHarbor`へインストールし、スタートメニューへショートカットを追加します。デスクトップへの追加は任意です。管理者権限は不要です。
 
 管理画面を閉じても、`CraftHarbor.Host.exe`がMinecraftサーバーと管理下の公開接続を維持します。サーバーを止めるときは「保存して停止」、トンネルを止めるときは公開接続の「停止」を選んでください。PCのシャットダウン・再起動・スリープをまたいだ継続はできません。予約操作とDiscord通知は管理画面の起動中に実行します。
 
@@ -136,7 +142,7 @@ Alt+1〜9で画面切替、Ctrl+Lでコンソール入力、F1で参加者向け
 
 ## アンインストール
 
-「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じます。インストール版は`uninstall.exe`またはWindowsのインストール済みアプリから削除します。ポータブル版はアプリ本体の展開フォルダーを削除します。
+「保存して停止」でサーバーを停止し、公開接続も停止して管理画面を閉じます。インストール版は`CraftHarbor-Uninstall.exe`またはWindowsのインストール済みアプリから削除します。ポータブル版はアプリ本体の展開フォルダーを削除します。
 ワールドを残す場合はワークスペースを削除しないでください。
 保存したワークスペース選択情報は`%LOCALAPPDATA%/CraftHarbor/workspace.txt`です。
 旧Astral Server Managerの`workspace.txt`と`servers.json`は、新しい保存先に同名ファイルがない場合だけコピーします。旧版を終了してから更新してください。ワールドやワークスペース内の設定はそのまま利用します。

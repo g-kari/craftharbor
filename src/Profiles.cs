@@ -86,7 +86,7 @@ partial class CraftHarbor
     }
     void RefreshProfileLabels()
     {
-        Text="CraftHarbor — "+profile.Name;if(serverIdentity!=null)serverIdentity.Text=profile.Name;if(profileSummary!=null)profileSummary.Text=ProfileMetadata();if(detail!=null)detail.Text="自分の接続先 localhost:"+ServerPort+"。友達には公開接続先を共有します。";
+        Text="CraftHarbor — "+profile.Name;if(dashboardTitle!=null){dashboardTitle.Text=workspace.SelectedIndex<=0?profile.Name:PageNames[workspace.SelectedIndex];tips.SetToolTip(dashboardTitle,profile.Name);}if(serverIdentity!=null)serverIdentity.Text=profile.Name;if(profileSummary!=null)profileSummary.Text=ProfileMetadata();if(detail!=null)detail.Text="自分の接続先 localhost:"+ServerPort+"。友達には公開接続先を共有します。";
     }
     void SwitchWorkspace()
     {

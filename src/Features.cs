@@ -26,7 +26,7 @@ partial class CraftHarbor
     NumericUpDown maxPlayersSetting,viewSetting,simulationSetting,backupHours,backupKeep;
     CheckBox pvpSetting,flightSetting,autoCrashRestart;
     CheckBox scheduledRestart;
-    DateTimePicker restartTime;
+    HarborTimeField restartTime;
     DateTime lastSample=DateTime.MinValue,lastPoll=DateTime.MinValue,lastTps=DateTime.MinValue,lastMspt=DateTime.MinValue,lastScheduled=DateTime.MinValue;
     TimeSpan lastCpu;
     double cpuPercent,ramGiB,tps=double.NaN,mspt=double.NaN;
@@ -58,11 +58,11 @@ partial class CraftHarbor
         history=new Chart { Dock=DockStyle.Fill,BackColor=Card,BorderlineColor=Muted };
         var area=new ChartArea("usage") { BackColor=Card };
         area.AxisX.LabelStyle.ForeColor=Muted;area.AxisX.MajorGrid.Enabled=false;area.AxisX.LabelStyle.Format="HH:mm:ss";
-        area.AxisY.LabelStyle.ForeColor=Accent;area.AxisY.Title="CPU %";area.AxisY.TitleForeColor=Accent;area.AxisY.Minimum=0;area.AxisY.Maximum=100;area.AxisY.MajorGrid.LineColor=Color.FromArgb(48,58,73);
-        area.AxisY2.Enabled=AxisEnabled.True;area.AxisY2.LabelStyle.ForeColor=Color.CornflowerBlue;area.AxisY2.Title="RAM GiB";area.AxisY2.TitleForeColor=Color.CornflowerBlue;area.AxisY2.Minimum=0;area.AxisY2.MajorGrid.Enabled=false;
+        area.AxisY.LabelStyle.ForeColor=Accent;area.AxisY.Title="CPU %";area.AxisY.TitleForeColor=Accent;area.AxisY.Minimum=0;area.AxisY.Maximum=100;area.AxisY.MajorGrid.LineColor=HarborTheme.Border;
+        area.AxisY2.Enabled=AxisEnabled.True;area.AxisY2.LabelStyle.ForeColor=HarborTheme.Blue;area.AxisY2.Title="RAM GiB";area.AxisY2.TitleForeColor=HarborTheme.Blue;area.AxisY2.Minimum=0;area.AxisY2.MajorGrid.Enabled=false;
         history.ChartAreas.Add(area);
         history.Series.Add(new Series("CPU %") { ChartType=SeriesChartType.FastLine,Color=Accent,BorderWidth=2,XValueType=ChartValueType.DateTime });
-        history.Series.Add(new Series("RAM GiB") { ChartType=SeriesChartType.FastLine,Color=Color.CornflowerBlue,BorderWidth=2,YAxisType=AxisType.Secondary,XValueType=ChartValueType.DateTime });
+        history.Series.Add(new Series("RAM GiB") { ChartType=SeriesChartType.FastLine,Color=HarborTheme.Blue,BorderWidth=2,YAxisType=AxisType.Secondary,XValueType=ChartValueType.DateTime });
         history.Legends.Add(new Legend { BackColor=Card,ForeColor=Ink,Docking=Docking.Top });InitializeMetricChart();dash.Controls.Add(history,0,1);
         metricsNote=new Label { Text="CPU・RAMは1秒ごと、TPS・MSPT・参加者は15秒ごと。停止中や未取得の値は — と表示します。",Dock=DockStyle.Fill,ForeColor=Muted,AutoEllipsis=true };dash.Controls.Add(metricsNote,0,2);
         var metricActions=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=false };
@@ -70,7 +70,7 @@ partial class CraftHarbor
         dash.Controls.Add(metricActions,0,3);
         var consolePage=Page(tabs,"コンソール");
         var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,142));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };consolePage.Resize+=delegate{consoleWrap.RowStyles[0].Height=consolePage.ClientSize.Width<900?216:142;};searchText=Input(consoleTools,230);
+        var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };searchText=Input(consoleTools,230);
         FlowBtn(consoleTools,"ログ内を検索",delegate { int pos=log.Text.IndexOf(searchText.Text,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);if(pos<0)pos=log.Text.IndexOf(searchText.Text,StringComparison.OrdinalIgnoreCase);if(pos>=0){log.Select(pos,searchText.Text.Length);log.ScrollToCaret();log.Focus();} });
         FlowBtn(consoleTools,"ログを保存",delegate { ExportLog(); });FlowBtn(consoleTools,"ログフォルダー",delegate { Open(Path.Combine(ServerDir,"logs")); });
         consoleWrap.Controls.Add(LogHeader(consoleTools),0,0);console.Dock=DockStyle.Fill;consoleWrap.Controls.Add(console,0,1);consolePage.Controls.Add(consoleWrap);
@@ -93,7 +93,7 @@ partial class CraftHarbor
         backupsGrid=Grid();backupsGrid.Columns.Add("path","ファイル名");backupsGrid.Columns.Add("date","作成日時");backupsGrid.Columns.Add("size","サイズ MiB");backupLayout.Controls.Add(backupsGrid,0,2);
         var backupActions=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=false };backup=FlowBtn(backupActions,"完全バックアップ",delegate { Backup(); });FlowBtn(backupActions,"一覧更新",delegate { RefreshBackups(); });FlowBtn(backupActions,"選択ZIPを復元",delegate { RestoreSelected(); });FlowBtn(backupActions,"自動保存先を開く",delegate { string d=Path.Combine(ServerDir,"backups");Directory.CreateDirectory(d);Open(d); });backupLayout.Controls.Add(backupActions,0,3);
         var automationPage=Page(tabs,"運用・スケジュール");var automation=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};automationPage.Controls.Add(automation);
-        autoCrashRestart=CheckSetting(automation,"異常終了時に自動再起動（1回の起動につき最大3回）");scheduledRestart=CheckSetting(automation,"毎日指定時刻に再起動（管理アプリ起動中のみ）");restartTime=new DateTimePicker {Format=DateTimePickerFormat.Custom,CustomFormat="HH:mm",ShowUpDown=true,Width=120,Value=DateTime.Today.AddHours(5)};automation.Controls.Add(restartTime);
+        autoCrashRestart=CheckSetting(automation,"異常終了時に自動再起動（1回の起動につき最大3回）");scheduledRestart=CheckSetting(automation,"毎日指定時刻に再起動（管理アプリ起動中のみ）");restartTime=new HarborTimeField {Value=DateTime.Today.AddHours(5)};automation.Controls.Add(restartTime);
         var autoActions=new FlowLayoutPanel {AutoSize=true};FlowBtn(autoActions,"運用設定を保存",delegate { SaveFeatureSettings();Add("[運用] 設定を保存しました。"); });FlowBtn(autoActions,"保存して再起動",delegate { RequestRestart(); });FlowBtn(autoActions,"全部停止",delegate { restartPending=false;StopTunnel();StopServer(); });automation.Controls.Add(autoActions);
         automation.Controls.Add(new Label{Text="再起動はワールド保存とプロセス終了を待ちます。予定再起動は60秒前にプレイヤーへ通知します。\r\nアプリ終了中・PCスリープ中は実行されません。異常終了時の自動再起動は初期状態で無効です。",AutoSize=true,ForeColor=Muted,MaximumSize=new Size(950,0)});
         var modsPage=Page(tabs,"MOD・導入案内");var modsLayout=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1};modsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,68));modsLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));modsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,44));modsPage.Controls.Add(modsLayout);
@@ -105,7 +105,7 @@ partial class CraftHarbor
     {
         var card=new SurfaceTable{Dock=DockStyle.Fill,BackColor=Card,RowCount=2,ColumnCount=1,Margin=new Padding(0,0,10,10),Padding=new Padding(14,10,14,10)};card.RowStyles.Add(new RowStyle(SizeType.Absolute,24));card.RowStyles.Add(new RowStyle(SizeType.Percent,100));card.Controls.Add(new Label{Text=title,Dock=DockStyle.Fill,ForeColor=Muted,Font=new Font("Yu Gothic UI",9)},0,0);var value=new Label{Text="—",Dock=DockStyle.Fill,ForeColor=Accent,Font=new Font("Segoe UI",20,FontStyle.Bold)};card.Controls.Add(value,0,1);panel.Controls.Add(card,column,0);return value;
     }
-    DataGridView Grid() { return new DataGridView {Dock=DockStyle.Fill,ReadOnly=true,StandardTab=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,BackgroundColor=Card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Card,ForeColor=Ink},DefaultCellStyle=new DataGridViewCellStyle{BackColor=Bg,ForeColor=Ink,SelectionBackColor=Color.FromArgb(50,90,94),SelectionForeColor=Color.White}}; }
+    DataGridView Grid() { return new DataGridView {Dock=DockStyle.Fill,ReadOnly=true,StandardTab=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,MultiSelect=false,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,BackgroundColor=Card,BorderStyle=BorderStyle.None,EnableHeadersVisualStyles=false,ColumnHeadersDefaultCellStyle=new DataGridViewCellStyle{BackColor=Card,ForeColor=Ink},DefaultCellStyle=new DataGridViewCellStyle{BackColor=Bg,ForeColor=Ink,SelectionBackColor=HarborTheme.Primary,SelectionForeColor=Color.White}}; }
     static TextBox Input(Control p,int width) {var t=new TextBox{Width=width,BackColor=Card,ForeColor=Ink,Margin=new Padding(0,5,10,0)};p.Controls.Add(t);return t;}
     static FlowLayoutPanel SettingRow(Control p,string title) {var row=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Margin=new Padding(0,0,0,6)};row.Controls.Add(new Label{Text=title,AutoSize=true,MinimumSize=new Size(220,48),MaximumSize=new Size(220,0),TextAlign=ContentAlignment.MiddleLeft,Margin=new Padding(0,0,6,0)});p.Controls.Add(row);return row;}
     static TextBox TextSetting(Control p,string title,int width) {return Input(SettingRow(p,title),width);}
@@ -141,14 +141,14 @@ partial class CraftHarbor
         RefreshExperience();
         try{
             if(sr){server.Refresh();TimeSpan cpu=server.TotalProcessorTime;cpuPercent=elapsed>0?Math.Max(0,Math.Min(100,(cpu-lastCpu).TotalSeconds/elapsed/Environment.ProcessorCount*100)):0;lastCpu=cpu;ramGiB=server.WorkingSet64/1073741824.0;cpuValue.Text=cpuPercent.ToString("0.0")+" %";ramValue.Text=ramGiB.ToString("0.00")+" GiB";uptimeValue.Text=(DateTime.Now-server.StartTime).ToString(@"dd\.hh\:mm\:ss");onlineValue.Text=ready?onlineCount.ToString():"—";
-                lock(metricLock){tpsValue.Text=(ready&&(now-lastTps).TotalSeconds<45&&!double.IsNaN(tps))?tps.ToString("0.0"):"—";msptValue.Text=(ready&&(now-lastMspt).TotalSeconds<45&&!double.IsNaN(mspt))?mspt.ToString("0.0")+" ms":"—";tpsValue.ForeColor=tps<18?Color.Salmon:Accent;msptValue.ForeColor=mspt>50?Color.Salmon:Accent;}
+                lock(metricLock){tpsValue.Text=(ready&&(now-lastTps).TotalSeconds<45&&!double.IsNaN(tps))?tps.ToString("0.0"):"—";msptValue.Text=(ready&&(now-lastMspt).TotalSeconds<45&&!double.IsNaN(mspt))?mspt.ToString("0.0")+" ms":"—";tpsValue.ForeColor=highContrast.Checked?Color.White:tps<18?Color.Salmon:Accent;msptValue.ForeColor=highContrast.Checked?Color.White:mspt>50?Color.Salmon:Accent;}
                 AppendMetricPoint(DateTime.Now,cpuPercent,ramGiB);
                 var inv=CultureInfo.InvariantCulture;samples.Add(now.ToString("o")+","+cpuPercent.ToString(inv)+","+ramGiB.ToString(inv)+","+(tpsValue.Text=="—"?"":tps.ToString(inv))+","+(msptValue.Text=="—"?"":mspt.ToString(inv))+","+onlineCount);if(samples.Count>86400)samples.RemoveAt(0);
                 if(!SparkAvailable){tpsValue.Text=msptValue.Text="未導入";metricsNote.Text="CPU・RAMは実測値。TPS・MSPTはspark未検出のため表示しません。内蔵版はサーバー設定でenabledを選べます。";}else metricsNote.Text="CPU・RAMは1秒、TPS・MSPT・人数は15秒ごとに取得。未取得・古い値は — と表示します。";
                 if(ready&&!stopping&&(now-lastPoll).TotalSeconds>=15){PollMetrics();RefreshUsers();}
             }else{cpuValue.Text=ramValue.Text=tpsValue.Text=msptValue.Text=uptimeValue.Text=onlineValue.Text="—";history.Titles["state"].Text=history.Series[0].Points.Count==0?"停止中：起動後にCPU・RAMの実測グラフを表示します":"停止中：最後に取得したCPU・RAMの履歴";}
             diskValue.Text=(new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace/1073741824.0).ToString("0.0")+" GiB";
-        }catch(Exception e){metricsNote.Text="メトリクス取得待ち："+e.Message;}
+        }catch(Exception e){metricsNote.Text="メトリクス取得待ち："+e.Message;}RefreshHistoryCaption();
     }
     void RequestRestart(){if(!Running(server)){StartServer();return;}if(stopping)return;restartPending=true;StopServer();Add("[運用] 保存・停止後に再起動します。");}
     void ExportMetrics(){using(var d=new SaveFileDialog{Filter="CSV|*.csv",FileName="craftharbor-metrics-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".csv"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllLines(d.FileName,new[]{"timestamp_utc,cpu_pc_percent,process_ram_gib,tps_5s,mspt_median,players"}.Concat(samples),new UTF8Encoding(true));Add("[管理] CSVを保存しました。");}}

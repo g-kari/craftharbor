@@ -11,13 +11,23 @@ partial class CraftHarbor
     void InitializeMetricChart()
     {
         var area=history.ChartAreas[0];var font=new Font("Yu Gothic UI",12);
+        area.AxisX.IsLabelAutoFit=area.AxisY.IsLabelAutoFit=area.AxisY2.IsLabelAutoFit=false;history.Legends[0].IsTextAutoFit=false;
         area.AxisX.LabelStyle.Font=area.AxisY.LabelStyle.Font=area.AxisY2.LabelStyle.Font=font;
         area.AxisY.TitleFont=area.AxisY2.TitleFont=font;area.AxisX.IntervalType=DateTimeIntervalType.Seconds;area.AxisX.Interval=60;
         area.AxisY.LineColor=area.AxisX.LineColor=area.AxisY2.LineColor=Muted;area.AxisX.MajorTickMark.LineColor=area.AxisY.MajorTickMark.LineColor=area.AxisY2.MajorTickMark.LineColor=Muted;
         area.AxisY2.Maximum=8;history.Legends[0].Font=font;
         foreach(var series in history.Series){series.ChartType=SeriesChartType.Line;series.MarkerSize=6;}
         history.Titles.Add(new Title{ Name="state",Text="サーバー起動後にCPU・RAMの実測グラフを表示します",Font=font,ForeColor=Muted,Docking=Docking.Top });
-        SetChartWindow(DateTime.Now);
+        ArrangeMetricChart();history.Resize+=delegate{ArrangeMetricChart();};SetChartWindow(DateTime.Now);
+    }
+    void ArrangeMetricChart()
+    {
+        // Reserve predictable space for 12pt axes; automatic layout can squeeze the plot
+        // to a few pixels once a state title and legend are present.
+        var area=history.ChartAreas[0];area.Position=new ElementPosition(0,16,100,84);
+        area.InnerPlotPosition=new ElementPosition(14,2,72,74);area.AxisY.Interval=25;history.Titles["state"].Visible=false;RefreshHistoryCaption();
+        history.Titles["state"].Position=new ElementPosition(2,0,96,12);
+        history.Legends[0].Position=new ElementPosition(48,0,50,16);history.Legends[0].Alignment=StringAlignment.Far;
     }
     void SetChartWindow(DateTime now)
     {

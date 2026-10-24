@@ -20,7 +20,7 @@ powershell -File tools/check-integrations.ps1
 
 チェックは合成データを使用します。Minecraftや外部サービスへの実接続を確認した場合は、環境・範囲・結果を分けて記載してください。稼働中のサーバーや本物のワールドで破壊的な試験をしないでください。
 
-インストーラーはInno Setup 6.7以降で生成します。`tools/install-inno.ps1`は固定ハッシュ・Authenticode署名を検証した公式コンパイラーを`work/tools/inno`へこのユーザー用に導入します。`tools/build-installer.ps1 -CompilerPath .../ISCC.exe`で`setup.exe`とインストール版用の`uninstall.exe`を生成します。`tools/check-installer.ps1`は既存インストールや同名ショートカットがある場合は停止し、ない場合に限って作業用フォルダーへ試験インストールし、ワールドと設定が残ることを確認してアンインストールします。
+インストーラーはInno Setup 6.7以降で生成します。`tools/install-inno.ps1`は固定ハッシュ・Authenticode署名を検証した公式コンパイラーを`work/tools/inno`へこのユーザー用に導入します。`tools/build-installer.ps1 -CompilerPath .../ISCC.exe`で`CraftHarbor-Setup-<版>.exe`とインストール版用の`CraftHarbor-Uninstall-<版>.exe`（インストール先では`CraftHarbor-Uninstall.exe`）を生成します。`tools/check-installer.ps1`は既存インストールや同名ショートカットがある場合は停止し、ない場合に限って作業用フォルダーへ試験インストールし、ワールドと設定が残ることを確認してアンインストールします。
 
 ## Pull requests
 
@@ -29,3 +29,9 @@ powershell -File tools/check-integrations.ps1
 ソースや独自アイコンへの貢献は、このプロジェクトと同じMIT Licenseで提供できるものに限ります。Minecraft、MOD、Java、トンネルツール、認証情報は同梱しないでください。
 
 メンテナーは[@g-kari](https://github.com/g-kari)です。返信の時間は保証していません。判断の理由はIssue・PRに残します。[行動規範](CODE_OF_CONDUCT.md)と[セキュリティ報告手順](SECURITY.md)も確認してください。
+
+## リリース
+
+`release.json` の版、AssemblyInfo・UninstallLauncher、Inno Setup、ZIP名、CI artifactパス、リリースノートを揃えたPRを確認してmainへマージします。mainで全チェックが成功し、直前のコミットからrelease.jsonの版が変わった場合だけ、CIが同じ実行の成果物からリリースを公開します。
+
+公開前に6ファイル（setup、uninstall、ポータブルZIPと各SHA-256）のサイズ・ハッシュ・ソースSHAを確認し、まずdraftへアップロードします。GitHub側のダイジェストがすべて一致してから公開します。既存の公開済みファイルや別コミットのタグは上書きしません。失敗時は該当のmain実行を再実行でき、同じソースのdraftから再開します。PR・タグ・手動実行では公開しません。公開権限は専用ジョブのcontents:writeだけです。
