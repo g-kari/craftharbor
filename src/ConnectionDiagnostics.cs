@@ -79,9 +79,10 @@ partial class CraftHarbor
     void ShowConnectionDiagnostics(bool snapshot=false)
     {
         using(var lifetime=new CancellationTokenSource())
-        using(var dialog=new Form{Text="友達が入れないときの接続診断",Size=new Size(880,720),MinimumSize=new Size(640,480),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=Font}){
+        using(var dialog=new HarborDialog{Text="友達が入れないときの接続診断",Size=new Size(880,720),MinimumSize=new Size(640,480),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=Font}){
             dialog.FormClosing+=delegate{lifetime.Cancel();};
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(16),RowCount=2,ColumnCount=1};layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));dialog.Controls.Add(layout);
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
             var report=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,BackColor=Card,ForeColor=Ink,Text="「診断を実行」で、設定とJava、ローカル/公開アドレスのMinecraftステータス応答を確認します。\r\n音声UDPの外部到達性や参加許可の個人別確認は断定しません。",AccessibleName="接続診断の段階と次の操作"};layout.Controls.Add(report,0,0);
             var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true};layout.Controls.Add(actions,0,1);Button run=null;
             run=FlowBtn(actions,"診断を実行",async delegate{

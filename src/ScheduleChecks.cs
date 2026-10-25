@@ -150,6 +150,7 @@ partial class CraftHarbor
             Directory.CreateDirectory(folder);ManagerDataOverride=Path.Combine(folder,"check-data");
             RunScheduleChecks();
             string workspace=Path.Combine(folder,"complete");PrepareScheduleFixture(workspace,fixture);WorkspaceRoot=workspace;
+            byte[] originalWorld=File.ReadAllBytes(Path.Combine(workspace,"server","world","level.dat"));
             ui=new CraftHarbor();ui.timer.Stop();
             ui.server=ui.LaunchPersistent("server",fixture,"-jar server.jar",ui.ServerDir,4);
             int firstPid=ui.server.Id;
@@ -167,7 +168,9 @@ partial class CraftHarbor
                 // already normalizes both separators; verify the actual world bytes, not its spelling.
                 var world=zip.Entries.SingleOrDefault(e=>e.FullName.Replace('\\','/')=="world/level.dat");
                 Require(world!=null,"full stopped-server backup contains original world");
-                using(var reader=new StreamReader(world.Open()))Require(reader.ReadToEnd()=="synthetic original world bytes","stopped-server ZIP preserves exact original world content");
+                using(var input=world.Open())using(var copied=new MemoryStream()){
+                    input.CopyTo(copied);Require(copied.ToArray().SequenceEqual(originalWorld),"stopped-server ZIP preserves exact original world bytes");
+                }
             }
             string[] commands=File.ReadAllLines(Path.Combine(workspace,"server","schedule-commands.txt"));
             int save=Array.IndexOf(commands,"save-all flush"),stop=Array.IndexOf(commands,"stop");

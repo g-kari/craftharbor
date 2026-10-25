@@ -108,9 +108,10 @@ partial class CraftHarbor
     void ShowModCompatibility(bool snapshot=false)
     {
         using(var lifetime=new CancellationTokenSource())
-        using(var dialog=new Form{Text="参加者MOD照合 / 構成リスト",Size=new Size(980,820),MinimumSize=new Size(720,560),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=Font}){
+        using(var dialog=new HarborDialog{Text="参加者MOD照合 / 構成リスト",Size=new Size(980,820),MinimumSize=new Size(720,560),StartPosition=FormStartPosition.CenterParent,BackColor=Bg,ForeColor=Ink,Font=Font}){
             var cancel=lifetime.Token;dialog.FormClosing+=delegate{lifetime.Cancel();};
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(16),RowCount=4,ColumnCount=1};layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.Percent,48));layout.RowStyles.Add(new RowStyle(SizeType.Percent,52));dialog.Controls.Add(layout);
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
             layout.Controls.Add(new Label{Dock=DockStyle.Fill,AutoSize=true,MaximumSize=new Size(900,0),Text="サーバーMODを読み、役割と正規配布先を確認して構成リストを書き出します。参加者は自身のmodsフォルダーまたは同形式のJSONで照合できます。\r\nunknownは必須扱いしません。両側で動くMODでも参加者に必須とは限らないため、requiredは主催者が明示します。JAR・秘密設定は書き出しません。",ForeColor=Muted},0,0);
             var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,WrapContents=true};layout.Controls.Add(actions,0,1);var grid=Grid();grid.ColumnHeadersHeightSizeMode=DataGridViewColumnHeadersHeightSizeMode.AutoSize;grid.ReadOnly=false;grid.AllowUserToAddRows=false;grid.Columns.Add(new DataGridViewTextBoxColumn{Name="id",HeaderText="MOD ID",ReadOnly=true});grid.Columns.Add(new DataGridViewTextBoxColumn{Name="version",HeaderText="版",ReadOnly=true});grid.Columns.Add(new DataGridViewComboBoxColumn{Name="role",HeaderText="役割",DataSource=ModRoles});grid.Columns.Add(new DataGridViewTextBoxColumn{Name="url",HeaderText="正規配布先（確認して入力）"});layout.Controls.Add(grid,0,2);
             var report=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,BackColor=Card,ForeColor=Ink,Text="まずサーバーMODを読むか、主催者の構成JSONを読み込んでください。",AccessibleName="MOD照合結果と保留事項"};layout.Controls.Add(report,0,3);ParticipantManifest selected=null;bool busy=false;

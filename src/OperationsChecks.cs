@@ -17,6 +17,12 @@ partial class CraftHarbor
             }
             using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(root,file),System.Drawing.Imaging.ImageFormat.Png);}
             dialog.Width=Math.Max(dialog.MinimumSize.Width,760);Application.DoEvents();
+            foreach(Control control in Descendants(dialog)){
+                var table=control.Parent as TableLayoutPanel;
+                if(table!=null&&control.Dock==DockStyle.Fill)Require(control.Right<=table.ClientSize.Width-table.Padding.Right+1,"narrow operation table content remains inside its column");
+                var flow=control.Parent as FlowLayoutPanel;
+                if(control is Button&&flow!=null&&flow.FlowDirection==FlowDirection.LeftToRight)Require(control.Right<=flow.ClientSize.Width,"narrow operation action buttons wrap inside their row");
+            }
             using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(root,Path.GetFileNameWithoutExtension(file)+"-narrow.png"),System.Drawing.Imaging.ImageFormat.Png);}
             dialog.Close();
         });};
