@@ -49,6 +49,7 @@ partial class CraftHarbor : Form
         if(Array.IndexOf(args,"--remove-boot-tasks")>=0)return RemoveInstalledBootTasks();
         if(Array.IndexOf(args,"--boot-check")>=0)return BootChecks(args);
         if(args.Length>0&&args[0]=="--settings-check")return SettingsChecks(args);
+        if(args.Length>0&&args[0]=="--schedule-check")return ScheduleChecks(args);
         if(args.Length>0&&args[0]=="--host-check")return HostCheck(args);
         if(args.Length>0&&args[0]=="--pack-check")return PackCheck(args);
         if(args.Length>0&&args[0]=="--pack-download-check")return PackDownloadCheck(args);if(args.Length>0&&args[0]=="--metrics-readonly-check")return CheckLiveMetricRendering(args);
@@ -195,7 +196,7 @@ partial class CraftHarbor : Form
         Add("[管理] サーバーを起動しています。初回は数分かかる場合があります。");
         }catch(Exception e){if(!IsDisposed){detail.Text="起動できませんでした："+e.Message;Add("[起動エラー] "+e.Message);}}finally{preparingServer=false;}
     }
-    void StopServer() { if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
+    void StopServer() { CancelScheduledFromUi();if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
     void StartTunnel(){StartHosting();}
     void StopTunnel() { if(Running(tunnel)) { HostCall(new HostRequest{Action="stop-tunnel"});Add("[管理] 公開接続を停止しました。"); } }
     void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text); }
