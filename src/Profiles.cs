@@ -44,14 +44,16 @@ partial class CraftHarbor
         string value="Minecraft Java"+(string.IsNullOrWhiteSpace(profile.MinecraftVersion)?"":" "+profile.MinecraftVersion);
         if(!string.IsNullOrWhiteSpace(profile.PackName))value+=" / "+profile.PackName+(string.IsNullOrWhiteSpace(profile.PackVersion)?"":" "+profile.PackVersion);return value;
     }
-    string RelativeServerPath(string value)
+    string RelativeServerPath(string value){return ServerRelativePath(ServerDir,value);}
+    static string ServerRelativePath(string directory,string value)
     {
-        if(string.IsNullOrWhiteSpace(value))throw new Exception("起動ファイルを指定してください。");if(Path.IsPathRooted(value))throw new Exception("起動ファイルはserverフォルダーからの相対パスで指定してください。");string full=Path.GetFullPath(Path.Combine(ServerDir,value));string prefix=Path.GetFullPath(ServerDir)+Path.DirectorySeparatorChar;if(!full.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))throw new Exception("起動ファイルはserverフォルダー内に配置してください。");return full;
+        if(string.IsNullOrWhiteSpace(value))throw new Exception("起動ファイルを指定してください。");if(Path.IsPathRooted(value))throw new Exception("起動ファイルはserverフォルダーからの相対パスで指定してください。");string full=Path.GetFullPath(Path.Combine(directory,value));string prefix=Path.GetFullPath(directory)+Path.DirectorySeparatorChar;if(!full.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))throw new Exception("起動ファイルはserverフォルダー内に配置してください。");return full;
     }
-    string LaunchTarget()
+    string LaunchTarget(){return ProfileLaunchTarget(ServerDir,profile);}
+    static string ProfileLaunchTarget(string directory,ServerProfile profile)
     {
-        if(profile.LaunchMode=="argfile"){string p=RelativeServerPath(profile.ArgumentsFile);if(!File.Exists(p))throw new FileNotFoundException("Java引数ファイルがありません。Forge/NeoForgeの導入手順を確認してください。",p);return "@"+Q(p)+" nogui";}
-        string jar=RelativeServerPath(profile.JarFile);if(!File.Exists(jar))throw new FileNotFoundException("サーバーJARがありません。サーバー設定の起動ファイルを確認してください。",jar);return "-jar "+Q(jar)+" nogui";
+        if(profile.LaunchMode=="argfile"){string p=ServerRelativePath(directory,profile.ArgumentsFile);if(!File.Exists(p))throw new FileNotFoundException("Java引数ファイルがありません。Forge/NeoForgeの導入手順を確認してください。",p);return "@"+Q(p)+" nogui";}
+        string jar=ServerRelativePath(directory,profile.JarFile);if(!File.Exists(jar))throw new FileNotFoundException("サーバーJARがありません。サーバー設定の起動ファイルを確認してください。",jar);return "-jar "+Q(jar)+" nogui";
     }
     void AddProfileSettings()
     {

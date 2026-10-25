@@ -83,11 +83,18 @@ partial class CraftHarbor
     }
     void ApplyDistancesAtStartup(int heap)
     {
-        EnsureStopped(true);var plan=PlanDistances(Environment.ProcessorCount,heap,RegisteredCount(),HasModWorkload,distances.ExpectedPlayers);
-        int view=distances.Automatic?plan.View:distances.ManualView,simulation=distances.Automatic?plan.Simulation:distances.ManualSimulation;
-        string path=Path.Combine(ServerDir,"server.properties"),original=File.ReadAllText(path);bool supported=SupportsSimulation(profile.MinecraftVersion,original);string next=DistanceProperties(original,view,simulation,supported);
+        EnsureStopped(true);
+        Add(ApplyStartupDistances(ServerDir,profile.MinecraftVersion,heap,RegisteredCount(),HasModWorkload,distances));
+    }
+    static string ApplyStartupDistances(string directory,string version,int heap,int registered,bool modded,DistanceOptions options)
+    {
+        var plan=PlanDistances(Environment.ProcessorCount,heap,registered,modded,options.ExpectedPlayers);
+        int view=options.Automatic?plan.View:ClampDistance(options.ManualView);
+        int simulation=options.Automatic?plan.Simulation:ClampDistance(options.ManualSimulation);
+        string path=Path.Combine(directory,"server.properties"),original=File.ReadAllText(path);
+        bool supported=SupportsSimulation(version,original);string next=DistanceProperties(original,view,simulation,supported);
         if(next!=original){string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temp,next,new UTF8Encoding(false));File.Replace(temp,path,path+".before-distance.bak");}
-        Add("[距離設定] "+(distances.Automatic?"自動":"手動")+"：描画 "+view+(supported?" / シミュレーション "+simulation:"")+" chunks。"+(distances.Automatic?plan.Reason:"") );
+        return "[距離設定] "+(options.Automatic?"自動":"手動")+"：描画 "+view+(supported?" / シミュレーション "+simulation:"")+" chunks。"+(options.Automatic?plan.Reason:"");
     }
     static void CheckDistancePolicy()
     {

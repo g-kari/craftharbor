@@ -22,7 +22,7 @@ Compression=lzma2
 SolidCompression=yes
 CloseApplications=no
 RestartApplications=no
-AppMutex=Local\CraftHarborInstallerGuard
+AppMutex=Local\CraftHarborInstallerGuard,Global\CraftHarborInstallerGuard
 DisableProgramGroupPage=yes
 UninstallDisplayName=CraftHarbor
 
@@ -56,6 +56,7 @@ Source: "..\dist\docs\PROFILES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\DESIGN.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\RELEASE_NOTES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\SIGNPATH.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\BOOT_RECOVERY.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\CraftHarbor"; Filename: "{app}\CraftHarbor.exe"
@@ -68,3 +69,19 @@ Filename: "{app}\CraftHarbor.exe"; Description: "CraftHarborを開く"; Flags: n
 japanese.WelcomeLabel2=CraftHarborをこのWindowsユーザー用にインストールします。%n%nアプリ本体とショートカットを追加します。Minecraft・Java・MODパックは含みません。%n%nアンインストールしてもワールド・設定・バックアップは残ります。%n%n未署名の開発プレビューです。
 
 ; No recursive UninstallDelete entries: operator workspaces and private settings are retained.
+
+
+[Code]
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  if FileExists(ExpandConstant('{app}\CraftHarbor.exe')) then
+  begin
+    Result := Exec(ExpandConstant('{app}\CraftHarbor.exe'), '--remove-boot-tasks', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    if Result then Result := ResultCode = 0;
+    if not Result then
+      MsgBox('CraftHarborのWindows起動タスクを解除できませんでした。運用画面から登録を解除してから、もう一度アンインストールしてください。', mbError, MB_OK);
+  end;
+end;

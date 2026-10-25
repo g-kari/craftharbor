@@ -59,9 +59,29 @@ partial class CraftHarbor
     {
         if(Running(tunnel))return;if(hosting.Provider=="direct"){Add("[公開方法] 直接公開を選択中です。保存した公開アドレスとルーターの転送設定を確認してください。");return;}
         if(hosting.Provider=="port-tool"){if(!File.Exists(hosting.PortToolExe)||!hosting.PortToolExe.EndsWith(".exe",StringComparison.OrdinalIgnoreCase))throw new Exception("ポート開放ツールのexeを公開方法の設定から選択してください。");Process.Start(new ProcessStartInfo(hosting.PortToolExe){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(hosting.PortToolExe)});Add("[公開方法] 指定したポート開放ツールを開きました。MinecraftのTCP "+ServerPort+" と音声用UDPを設定してください。");return;}
-        if(hosting.Provider=="ngrok"){if(!File.Exists(hosting.NgrokExe))throw new Exception("ngrok.exeを指定し、公式手順でアカウント認証を設定してください。");tunnel=LaunchPersistent("tunnel",hosting.NgrokExe,"tcp 127.0.0.1:"+ServerPort+" --log=stdout --log-format=json",Path.GetDirectoryName(hosting.NgrokExe),0);return;}
-        string agent=hosting.AgentExe;if(string.IsNullOrWhiteSpace(agent))agent=File.Exists(Path.Combine(PlayitDir,"playit.exe"))?Path.Combine(PlayitDir,"playit.exe"):Path.Combine(PlayitDir,"playit-0.17.1.exe");if(!File.Exists(agent))throw new Exception("playitの公式エージェントを公開方法の設定から指定してください。");
-        bool legacy=Path.GetFileName(agent).Contains("0.17");string args=legacy?"--stdout --secret_path ":"--secret-path ";args+=Q(Path.Combine(PlayitDir,"agent-secret.toml"));if(!legacy)args+=" --socket-path "+Q(@"\\.\pipe\CraftHarbor-playit-"+WorkspaceMutexName(root).Substring(6));tunnel=LaunchPersistent("tunnel",agent,args,Path.GetDirectoryName(agent),0);RefreshHosting(true);
+        var request=BackgroundTunnelRequest(root,hosting,ServerPort);
+        if(request!=null)tunnel=LaunchPersistent("tunnel",request.Exe,request.Arguments,request.Directory,0);
+        if(hosting.Provider=="playit")RefreshHosting(true);
+    }
+    static HostRequest BackgroundTunnelRequest(string workspace,HostingOptions options,int port)
+    {
+        if(options==null)throw new InvalidDataException("公開接続の設定を読み取れません。");
+        if(options.Provider=="direct")return null;
+        if(options.Provider=="port-tool")throw new InvalidOperationException("画面操作が必要なポート開放ツールはサインイン前に自動起動できません。サーバーのみを選ぶか、playit.gg・ngrokを設定してください。");
+        string exe,arguments;
+        if(options.Provider=="ngrok"){
+            exe=options.NgrokExe;
+            if(!File.Exists(exe))throw new FileNotFoundException("設定したngrok.exeが見つかりません。");
+            arguments="tcp 127.0.0.1:"+port+" --log=stdout --log-format=json";
+        }else{
+            string folder=Path.Combine(workspace,"playit");exe=options.AgentExe;
+            if(string.IsNullOrWhiteSpace(exe))exe=File.Exists(Path.Combine(folder,"playit.exe"))?Path.Combine(folder,"playit.exe"):Path.Combine(folder,"playit-0.17.1.exe");
+            if(!File.Exists(exe))throw new FileNotFoundException("設定したplayitエージェントが見つかりません。");
+            bool legacy=Path.GetFileName(exe).Contains("0.17");
+            arguments=(legacy?"--stdout --secret_path ":"--secret-path ")+Q(Path.Combine(folder,"agent-secret.toml"));
+            if(!legacy)arguments+=" --socket-path "+Q(@"\\.\pipe\CraftHarbor-playit-"+WorkspaceMutexName(workspace).Substring(6));
+        }
+        return new HostRequest{Action="start",Kind="tunnel",Exe=exe,Arguments=arguments,Directory=Path.GetDirectoryName(exe)};
     }
     void HostingSettings(bool snapshot=false)
     {

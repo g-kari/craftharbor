@@ -42,8 +42,12 @@ partial class CraftHarbor : Form
     [STAThread] static int Main(string[] args)
     {
 #if HOST_BINARY
+        if(Array.IndexOf(args,"--boot-check")>=0)return BootChecks(args);
         return PersistentHostMain(args);
 #else
+        if(Array.IndexOf(args,"--configure-boot-task")>=0)return ConfigureBootTask(args);
+        if(Array.IndexOf(args,"--remove-boot-tasks")>=0)return RemoveInstalledBootTasks();
+        if(Array.IndexOf(args,"--boot-check")>=0)return BootChecks(args);
         if(args.Length>0&&args[0]=="--host-check")return HostCheck(args);
         if(args.Length>0&&args[0]=="--pack-check")return PackCheck(args);
         if(args.Length>0&&args[0]=="--pack-download-check")return PackDownloadCheck(args);if(args.Length>0&&args[0]=="--metrics-readonly-check")return CheckLiveMetricRendering(args);
@@ -179,7 +183,7 @@ partial class CraftHarbor : Form
         string java=JavaPath();var options=new JavaOptions{Automatic=javaOptions.Automatic,Custom=javaOptions.Custom};int previewHeap=ResolveHeapBudget();
         var verified=await Task.Run(()=>PrepareJavaPlan(java,previewHeap,options));
         if(cancelServerStart||IsDisposed||Disposing)return;
-        using(var memoryGate=new Mutex(false,"Local\\CraftHarborMemoryReservations")){
+        using(var memoryGate=new Mutex(false,MemoryGateName())){
             if(!memoryGate.WaitOne(0))throw new Exception("他のサーバーがメモリを割り当てています。少し待ってからもう一度お試しください。");
             try{int heap=ResolveHeapBudget();var plan=PlanJava(verified.Runtime,heap,Environment.ProcessorCount,RegisteredCount(),HasModWorkload,options.Automatic,options.Custom);Add("[Java設定] "+plan.Reason+" / "+(plan.Tuning.Length==0?"JVM標準の調整":plan.Tuning));ApplyDistancesAtStartup(heap);server=LaunchPersistent("server",java,plan.Arguments+" "+launchTarget,ServerDir,heap);activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{HostCall(new HostRequest{Action="command",Text="stop"});throw;}
                 Add("[メモリ] "+(autoMemory.Checked?"自動・登録サーバー "+RegisteredCount()+"台":"手動")+"：最大 "+heap+" GiB / 初期 "+plan.InitialHeap+" GiB。必要に応じてJVMが拡張します。");
