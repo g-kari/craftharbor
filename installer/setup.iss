@@ -38,8 +38,9 @@ DialogFontSize=12
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する"; Flags: unchecked
 
 [InstallDelete]
-; Remove only the obsolete launcher owned by older CraftHarbor installations.
+; Remove only obsolete files owned by older CraftHarbor installations.
 Type: files; Name: "{app}\uninstall.exe"
+Type: files; Name: "{app}\docs\SIGNPATH.md"
 
 [Files]
 Source: "..\dist\CraftHarbor.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -55,7 +56,6 @@ Source: "..\dist\docs\PERFORMANCE.md"; DestDir: "{app}\docs"; Flags: ignoreversi
 Source: "..\dist\docs\PROFILES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\DESIGN.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\RELEASE_NOTES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
-Source: "..\dist\docs\SIGNPATH.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\BOOT_RECOVERY.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\SETTINGS.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 

@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $dist = Join-Path $repoRoot 'dist'
-$files = @('CraftHarbor.exe','CraftHarbor.Host.exe','icons\craftharbor.ico','recipes\server-packs.json','README.md','LICENSE','PRIVACY.md','CODE_SIGNING_POLICY.md','docs\PERFORMANCE.md','docs\PROFILES.md','docs\DESIGN.md','docs\RELEASE_NOTES.md','docs\SIGNPATH.md')
+$files = @('CraftHarbor.exe','CraftHarbor.Host.exe','icons\craftharbor.ico','recipes\server-packs.json','README.md','LICENSE','PRIVACY.md','CODE_SIGNING_POLICY.md','docs\PERFORMANCE.md','docs\PROFILES.md','docs\DESIGN.md','docs\RELEASE_NOTES.md')
 foreach ($file in $files) { if (-not (Test-Path -LiteralPath (Join-Path $dist $file))) { throw "Missing package file: $file" } }
 $archivePath = Join-Path $dist 'CraftHarbor-0.4.0-preview-windows-x64.zip'
 $stage = Join-Path $repoRoot ('work\package-'+[guid]::NewGuid().ToString('N'))

@@ -137,7 +137,6 @@ Alt+1〜9で画面切替、Ctrl+Lでコンソール入力、F1で参加者向け
 
 - [Privacy policy](PRIVACY.md)
 - [Code signing policy](CODE_SIGNING_POLICY.md)
-- [SignPath preparation](docs/SIGNPATH.md)
 - [Server profiles and multiple servers](docs/PROFILES.md)
 - [Security reporting](SECURITY.md)
 
