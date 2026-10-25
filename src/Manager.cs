@@ -17,7 +17,7 @@ partial class CraftHarbor : Form
     readonly string root = WorkspaceRoot;
     readonly ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
     Process server, tunnel;
-    volatile bool ready, stopping, backupBusy;
+    volatile bool ready, stopping, backupBusy, bootPreparing;
     bool closing, quitting;
     bool preparingServer,cancelServerStart;
     DateTime stopAt;

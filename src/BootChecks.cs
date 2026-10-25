@@ -101,6 +101,8 @@ partial class CraftHarbor
             blocked=false;try{ExecuteHost(new HostRequest{Action="start",Kind="tunnel",BootRequest=true},workspace);}catch(InvalidOperationException){blocked=true;}
             Require(blocked,"manual tunnel stop wins a concurrent boot launch");
             Require(File.ReadAllLines(Path.Combine(directory,"boot-launches.txt")).Length==1,"failed EULA never launches process");
+            ui.bootPreparing=true;ui.RefreshDashboardPresentation(false,false);ui.ApplyVoiceAutomatically();
+            Require(!ui.start.Enabled&&!ui.connect.Enabled&&!ui.backup.Enabled&&ui.serverState.Text.Contains("自動復帰"),"UI reports boot preparation and disables conflicting actions");ui.bootPreparing=false;
             File.WriteAllText(report,"PASS: Windows Task Scheduler COM definition (boot trigger, least privilege, batch logon, no execution timeout, no registration trigger); profile/SID isolation; port collision; headless fake server and configured tunnel; one host; UI reconnect retaining both PIDs; independent tunnel stop; graceful server stop; pending retry cancellation; EULA and server settings preservation. No real Windows task registered, password requested, public tunnel created or machine rebooted. Cross-session interactive logon and actual reboot remain manual validation.");
             return 0;
         }catch(Exception error){File.WriteAllText(report,"FAIL: "+error);return 1;}

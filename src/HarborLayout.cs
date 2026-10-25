@@ -171,13 +171,13 @@ partial class CraftHarbor
     }
     void RefreshDashboardPresentation(bool sr,bool tr)
     {
-        string state=preparingServer?"Javaを確認中…":sr?(stopping?"保存・停止中":ready?"稼働中":"起動中…"):"停止中";
+        string state=preparingServer?"Javaを確認中…":sr?(stopping?"保存・停止中":ready?"稼働中":"起動中…"):bootPreparing?"自動復帰の準備中…":"停止中";
         serverState.Text=(sr&&ready&&!stopping?"● ":"■ ")+"サーバー："+state;
         serverState.ForeColor=highContrast.Checked?Color.White:sr&&ready&&!stopping?HarborTheme.Live:Ink;
         tunnelState.Text=(tr?"● ":"■ ")+"公開接続："+(tr?"実行中":hosting.Provider=="direct"?"手動設定":"停止中");
         tunnelState.ForeColor=highContrast.Checked?Color.White:tr?HarborTheme.Live:Ink;
-        start.Enabled=!sr&&!preparingServer&&!backupBusy&&!closing;stop.Enabled=sr&&!stopping;
-        connect.Enabled=!tr&&!closing;disconnect.Enabled=tr;backup.Enabled=!sr&&!preparingServer&&!backupBusy&&!closing;memory.Enabled=!sr&&!preparingServer&&!autoMemory.Checked;
+        start.Enabled=!sr&&!preparingServer&&!bootPreparing&&!backupBusy&&!closing;stop.Enabled=sr&&!stopping;
+        connect.Enabled=!tr&&!bootPreparing&&!closing;disconnect.Enabled=tr;backup.Enabled=!sr&&!preparingServer&&!bootPreparing&&!backupBusy&&!closing;memory.Enabled=!sr&&!preparingServer&&!bootPreparing&&!autoMemory.Checked;
         launchAll.Enabled=start.Enabled||connect.Enabled;shareAccountButton.Text=hosting.Provider=="playit"||hosting.Provider=="ngrok"?"アカウント連携":"公開設定";shareAccountButton.AccessibleName=shareAccountButton.Text;
         connect.AccessibleName=HostingName+"の接続を開始";disconnect.AccessibleName=HostingName+"の接続を停止";
         footerState.Text=serverState.Text+"    |    "+tunnelState.Text+" / "+HostingName;

@@ -94,7 +94,7 @@ partial class CraftHarbor
     static Process HostProcess(int id,long started){if(id<=0)return null;try{var p=Process.GetProcessById(id);if(!p.HasExited&&p.StartTime.ToUniversalTime().Ticks==started)return p;p.Dispose();}catch(ArgumentException){}catch(InvalidOperationException){}return null;}
     void AcceptHostStatus(HostReply reply)
     {
-        if(attachedHostSession!=reply.Session){hostCursor=0;attachedHostSession=reply.Session;}serverExitCode=reply.ServerExitCode;
+        if(attachedHostSession!=reply.Session){hostCursor=0;attachedHostSession=reply.Session;}serverExitCode=reply.ServerExitCode;bootPreparing=reply.BootInitializing;
         if(reply.ServerPid>0&&(server==null||server.Id!=reply.ServerPid))server=HostProcess(reply.ServerPid,reply.ServerStart);if(reply.TunnelPid>0&&(tunnel==null||tunnel.Id!=reply.TunnelPid))tunnel=HostProcess(reply.TunnelPid,reply.TunnelStart);ready=reply.Ready;activeHeapGiB=reply.Heap;
         foreach(var line in reply.Lines){if(line.Sequence<=hostCursor)continue;if(line.Text.StartsWith("[MC] "))ParseServerMetrics(line.Text.Substring(5));if(line.Text.StartsWith("[公開] ")){var claim=System.Text.RegularExpressions.Regex.Match(line.Text,@"https://playit\.gg/claim/[A-Za-z0-9_-]+");if(claim.Success)claimUrl=claim.Value;var endpoint=System.Text.RegularExpressions.Regex.Match(line.Text,@"tcp://([A-Za-z0-9.-]+:\d+)");if(endpoint.Success&&hosting.Provider=="ngrok")discoveredGame=endpoint.Groups[1].Value;}Add(line.Text);}hostCursor=reply.Sequence;
     }

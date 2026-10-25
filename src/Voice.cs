@@ -25,8 +25,8 @@ partial class CraftHarbor
     }
     void ApplyVoiceAutomatically()
     {
-        if(!hosting.AutoVoice||Running(server)||preparingServer||backupBusy)return;
-        try{EnsureStopped();}catch(System.Net.Sockets.SocketException){return;}
+        if(!hosting.AutoVoice||Running(server)||preparingServer||bootPreparing||backupBusy)return;
+        try{EnsureStopped();}catch(System.Net.Sockets.SocketException){return;}catch(InvalidOperationException){return;}
         foreach(string message in ApplyAutomaticVoice(ServerDir,ServerPort,hosting))Add(message);
     }
     static List<string> ApplyAutomaticVoice(string directory,int port,HostingOptions options)
