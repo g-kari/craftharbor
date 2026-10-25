@@ -92,6 +92,10 @@ partial class CraftHarbor
             }
             ExecuteHost(new HostRequest{Action="cancel-boot"},workspace);
             Require(retry.Wait(5000)&&!bootInitializing,"manual cancellation interrupts pending startup retry");
+            Require(ReadBootJson<BootReport>(Path.Combine(workspace,"boot-status.json")).Phase=="stopped","cancelled retry has an explicit final status");
+            bootCancelled=false;bootTunnelCancelled=true;
+            blocked=false;try{ExecuteHost(new HostRequest{Action="start",Kind="tunnel",BootRequest=true},workspace);}catch(InvalidOperationException){blocked=true;}
+            Require(blocked,"manual tunnel stop wins a concurrent boot launch");
             Require(File.ReadAllLines(Path.Combine(directory,"boot-launches.txt")).Length==1,"failed EULA never launches process");
             File.WriteAllText(report,"PASS: Windows Task Scheduler COM definition (boot trigger, least privilege, batch logon, no execution timeout, no registration trigger); profile/SID isolation; port collision; headless fake server and configured tunnel; one host; UI reconnect retaining both PIDs; independent tunnel stop; graceful server stop; pending retry cancellation; EULA and server settings preservation. No real Windows task registered, password requested, public tunnel created or machine rebooted. Cross-session interactive logon and actual reboot remain manual validation.");
             return 0;

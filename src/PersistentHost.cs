@@ -43,7 +43,7 @@ partial class CraftHarbor
         if(request.Action=="start"){
             if(hostExit)throw new InvalidOperationException("常駐プロセスは終了中です。");
             if(bootInitializing&&!request.BootRequest)throw new InvalidOperationException("Windows起動時の準備中です。完了を待つか、運用画面で自動復帰を中断してください。");
-            if(request.BootRequest&&bootCancelled)throw new InvalidOperationException("自動復帰を中断しました。");
+            if(request.BootRequest&&(bootCancelled||(request.Kind!="server"&&bootTunnelCancelled)))throw new InvalidOperationException("自動復帰を中断しました。");
             bool mc=request.Kind=="server";if(Running(mc?hostedServer:hostedTunnel))return HostStatus(request.Since);
             if(!Path.IsPathRooted(request.Directory)||!Directory.Exists(request.Directory))throw new IOException("起動フォルダーを確認してください。");
             var process=new Process{StartInfo=new ProcessStartInfo(request.Exe,request.Arguments){WorkingDirectory=request.Directory,UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8}};

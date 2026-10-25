@@ -73,7 +73,7 @@ partial class CraftHarbor
     {
         public int Size; public IntPtr Parent; public string Message,Caption; public IntPtr Banner;
     }
-    [DllImport("credui.dll",CharSet=CharSet.Unicode)]
+    [DllImport("credui.dll",CharSet=CharSet.Unicode,ExactSpelling=true)]
     static extern int CredUIPromptForCredentialsW(ref BootCredentialInfo info,string target,IntPtr reserved,int error,
         StringBuilder user,int userSize,StringBuilder password,int passwordSize,[MarshalAs(UnmanagedType.Bool)] ref bool save,int flags);
     static bool RegisterBootWithCredential(dynamic folder,dynamic definition,string taskName,string ownerName,string sid)
@@ -160,7 +160,7 @@ partial class CraftHarbor
             var options=ReadBootJson<BootOptions>(BootOptionsPath(root))??new BootOptions();
             service=OpenTaskService();folder=service.GetFolder("\\");task=FindBootTask(folder,BootTaskName(root,CurrentSid()));
             string status=task==null?"未登録":!OwnedBootTask(task,CurrentSid(),BootHostExecutable)?"別のインストール先で登録されています":
-                !options.Enabled||!(bool)task.Enabled?"無効":"有効 — サインイン前に起動 / "+options.DelaySeconds+"秒待機";
+                !options.Enabled||!BootOwnerMatches(options.OwnerSid)||!(bool)task.Enabled?"無効":"有効 — サインイン前に起動 / "+options.DelaySeconds+"秒待機";
             if(task!=null)status+="\r\nWindows実行結果: 0x"+((int)task.LastTaskResult).ToString("X8");
             var report=ReadBootJson<BootReport>(Path.Combine(root,"boot-status.json"));
             if(report!=null&&report.UpdatedUtc.Length>0) {

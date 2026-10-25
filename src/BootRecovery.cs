@@ -170,6 +170,6 @@ partial class CraftHarbor
                 }
             }
         } catch(Exception error) { WriteBootReport(workspace,"error","自動復帰を確認してください："+error.Message); }
-        finally { bootInitializing = false; }
+        finally { if(bootCancelled)WriteBootReport(workspace,"stopped","今回の自動復帰は中断されました。稼働中のプロセスは管理画面で確認してください。");bootInitializing = false; }
     }
 }
