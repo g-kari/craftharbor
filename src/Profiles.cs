@@ -57,7 +57,7 @@ partial class CraftHarbor
     }
     void AddProfileSettings()
     {
-        var pending=ReadPendingSettings(root);var editing=pending.Profile??profile;
+        var pending=PendingSettingsForEditor();var editing=pending.Profile??profile;
         var form=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];var group=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=new Padding(0,0,0,18)};
         group.Controls.Add(new Label{Text="サーバープロファイル",AutoSize=true,Font=new Font("Yu Gothic UI",13,FontStyle.Bold)});
         profileName=TextSetting(group,"表示名",420);profileName.Text=editing.Name;

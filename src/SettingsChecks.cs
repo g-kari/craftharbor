@@ -44,6 +44,10 @@ partial class CraftHarbor
             Require(ui.DistancePreviewHeap()==33,"running preview retains allocated heap rather than subtracting its own RAM");
             Require(ui.pendingSettingsStatus.Text.Contains("再起動待ち"),"pending restart status shown");
             Require(ui.server.Id==pid&&Running(ui.server),"settings save does not restart or stop server");
+            ui.Size=new System.Drawing.Size(1024,720);ui.Text="Synthetic pending settings check";
+            ui.workspace.SelectedIndex=3;ui.Show();System.Windows.Forms.Application.DoEvents();
+            using(var image=new System.Drawing.Bitmap(ui.Width,ui.Height)){ui.DrawToBitmap(image,new System.Drawing.Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(WorkspaceRoot,"ui-pending-settings.png"),System.Drawing.Imaging.ImageFormat.Png);}
+            ui.Hide();
             ui.Dispose();ui=new CraftHarbor();ui.timer.Stop();
             Require(ui.server!=null&&ui.server.Id==pid,"settings reopen reattaches existing process");
             Require(ui.motdSetting.Text=="Next $' value"&&ui.profileName.Text=="Next profile"&&ui.portSetting.Value==nextPort,"pending editors survive reopening");
@@ -78,7 +82,11 @@ partial class CraftHarbor
             File.WriteAllText(Path.Combine(directory,"whitelist.json"),"{broken");
             blocked=false;try{EditStoppedWhitelist(directory,"remove","ExampleUser",null);}catch{blocked=true;}
             Require(blocked&&File.ReadAllText(Path.Combine(directory,"whitelist.json"))=="{broken","malformed whitelist preserved");
-            CheckDistancePolicy();
+            File.WriteAllText(PendingSettingsPath(WorkspaceRoot),"{broken");ui.LoadServerSettings();
+            Require(ui.EditingProfile().Name=="Next profile","damaged draft does not prevent viewing current profile");
+            blocked=false;try{StageServerSettings(WorkspaceRoot,delegate(PendingServerSettings draft){draft.Properties["motd"]="replace";});}catch{blocked=true;}
+            Require(blocked&&File.ReadAllText(PendingSettingsPath(WorkspaceRoot))=="{broken","damaged draft is not silently overwritten");
+            File.Delete(PendingSettingsPath(WorkspaceRoot));CheckDistancePolicy();
             ui.HostCall(new HostRequest{Action="shutdown-idle"});
             File.WriteAllText(report,"PASS: runtime settings/profile save without restart or active-port change; durable next-start draft; UI reopening; occupied-port rejection; shutdown rewrite preservation; atomic next-start apply and backup; unrelated properties preserved; per-profile isolation; whitelist add/remove/UUID validation/deduplication/corrupt-file protection; manual and five-tier distance policies and running heap preview. Synthetic processes only; no Minecraft server, real account lookup, external tunnel or PC restart.");
             return 0;

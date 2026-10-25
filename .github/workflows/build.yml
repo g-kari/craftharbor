@@ -75,6 +75,7 @@ jobs:
             dist/CraftHarbor-0.4.0-preview-windows-x64.zip.sha256
             dist/release-manifest.json
             work/settings-check-*/settings-verification.txt
+            work/settings-check-*/ui-pending-settings.png
             work/boot-check-*/boot-verification.txt
             work/boot-check-*/boot-task-definition.xml
             dist/core-check-report.txt

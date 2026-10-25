@@ -46,11 +46,16 @@ partial class CraftHarbor
         });
     }
     static bool HasPendingSettings(PendingServerSettings value){return value.Properties.Count>0||value.Profile!=null||value.HasJavaPath;}
+    PendingServerSettings PendingSettingsForEditor()
+    {
+        try{return ReadPendingSettings(root);}catch{return new PendingServerSettings();}
+        // The status label reports the read error; save/start still use the strict reader and preserve the damaged draft.
+    }
     Dictionary<string,string> EditingServerProperties()
     {
-        var values=ReadProperties();foreach(var pair in ReadPendingSettings(root).Properties)values[pair.Key]=pair.Value;return values;
+        var values=ReadProperties();foreach(var pair in PendingSettingsForEditor().Properties)values[pair.Key]=pair.Value;return values;
     }
-    ServerProfile EditingProfile(){return ReadPendingSettings(root).Profile??profile;}
+    ServerProfile EditingProfile(){return PendingSettingsForEditor().Profile??profile;}
     void RefreshPendingSettingsStatus()
     {
         if(pendingSettingsStatus==null)return;
