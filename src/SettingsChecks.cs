@@ -44,9 +44,10 @@ partial class CraftHarbor
             Require(ui.DistancePreviewHeap()==33,"running preview retains allocated heap rather than subtracting its own RAM");
             Require(ui.pendingSettingsStatus.Text.Contains("再起動待ち"),"pending restart status shown");
             Require(ui.server.Id==pid&&Running(ui.server),"settings save does not restart or stop server");
-            ui.Size=new System.Drawing.Size(1024,720);ui.Text="Synthetic pending settings check";
-            ui.workspace.SelectedIndex=3;ui.Show();System.Windows.Forms.Application.DoEvents();
-            using(var image=new System.Drawing.Bitmap(ui.Width,ui.Height)){ui.DrawToBitmap(image,new System.Drawing.Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(WorkspaceRoot,"ui-pending-settings.png"),System.Drawing.Imaging.ImageFormat.Png);}
+            ui.Text="Synthetic pending settings check";ui.Show();System.Windows.Forms.Application.DoEvents();
+            ui.SetReviewSize(new System.Drawing.Size(1024,720));ui.workspace.SelectedIndex=3;ui.SelectHarborPage();ui.TickState();
+            ui.CaptureHarborPage("ui-pending-settings.png",3);
+            Require(ui.dashboardTitle.Text=="サーバー設定"&&ui.pendingSettingsStatus.Width>400&&ui.profileName.Visible,"pending settings capture has completed layout");
             ui.Hide();
             ui.Dispose();ui=new CraftHarbor();ui.timer.Stop();
             Require(ui.server!=null&&ui.server.Id==pid,"settings reopen reattaches existing process");
