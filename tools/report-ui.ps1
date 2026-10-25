@@ -11,11 +11,12 @@ if($Group -eq 'primary' -or $Group -eq 'all'){
 }
 # Inspect logs after the job completes; active-job downloads can be incomplete.
 # All images are synthetic native captures, never a user's local desktop.
+$operationImages=@('ui-connection-diagnostics','ui-mod-compatibility','ui-update-sandbox') | ForEach-Object {$stem=$_; @('','-narrow','-contrast','-contrast-narrow') | ForEach-Object {$stem+$_+'.png'}}
 $files=switch($Group){
- 'all' { @('ui-distance-settings.png','ui-java-settings.png','ui-harbor-independent.png','ui-harbor-native-1024.png','ui-harbor-native-contrast-history.png','ui-harbor-1360-0.png','ui-harbor-history.png','ui-harbor-contrast-history.png','ui-hosting.png','ui-import.png','ui-servers.png','ui-hosting-contrast.png','ui-import-contrast.png','ui-servers-contrast.png');0..8 | ForEach-Object {'ui-harbor-1024-'+$_+'.png';'ui-harbor-contrast-'+$_+'.png'} }
+ 'all' { @('ui-distance-settings.png','ui-java-settings.png','ui-harbor-independent.png','ui-harbor-native-1024.png','ui-harbor-native-contrast-history.png','ui-harbor-1360-0.png','ui-harbor-history.png','ui-harbor-contrast-history.png','ui-hosting.png','ui-import.png','ui-servers.png','ui-hosting-contrast.png','ui-import-contrast.png','ui-servers-contrast.png');$operationImages;0..8 | ForEach-Object {'ui-harbor-1024-'+$_+'.png';'ui-harbor-contrast-'+$_+'.png'} }
  'primary' {@('ui-harbor-independent.png','ui-harbor-native-1024.png','ui-harbor-native-contrast-history.png','ui-harbor-1360-0.png')}
  'pages' {0..8 | ForEach-Object {'ui-harbor-1024-'+$_+'.png'}}
- 'dialogs' {@('ui-hosting.png','ui-import.png','ui-servers.png','ui-hosting-contrast.png','ui-import-contrast.png','ui-servers-contrast.png')}
+ 'dialogs' {@('ui-hosting.png','ui-import.png','ui-servers.png','ui-hosting-contrast.png','ui-import-contrast.png','ui-servers-contrast.png');$operationImages}
  'accessibility' {0..8 | ForEach-Object {'ui-harbor-contrast-'+$_+'.png'}}
 }
 foreach($name in $files){

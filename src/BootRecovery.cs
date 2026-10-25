@@ -30,10 +30,9 @@ partial class CraftHarbor
     }
     void CheckBootPreparation()
     {
-        if(!File.Exists(BootOptionsPath(root)))return;
         try {
             var status=HostCall(new HostRequest{Since=long.MaxValue});
-            if(status.BootInitializing||status.ServerPid>0)throw new InvalidOperationException("自動復帰の準備中、またはサーバーが稼働中です。準備の中断・サーバー停止後に操作してください。");
+            if(status.BootInitializing||status.Maintenance||status.ServerPid>0)throw new InvalidOperationException("自動復帰・予約処理の準備中、またはサーバーが稼働中です。処理の中断・サーバー停止後に操作してください。");
         }catch(TimeoutException){}catch(IOException){}
     }
     static string BootOptionsPath(string workspace) { return Path.Combine(workspace, "boot-options.json"); }
