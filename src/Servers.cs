@@ -32,9 +32,11 @@ partial class CraftHarbor
     static void AtomicManagerWrite(string path,string text){Directory.CreateDirectory(ManagerData);string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temp,text,new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,path+".bak");else File.Move(temp,path);}
     static void RegisterWorkspace(string path)
     {
-        path=CanonicalWorkspace(path);using(var gate=new Mutex(false,"Local\\CraftHarborServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("サーバー一覧の更新を待っています。もう一度お試しください。");try{var list=RegisteredServers();if(!list.Any(x=>string.Equals(CanonicalWorkspace(x.Path),path,StringComparison.OrdinalIgnoreCase))){list.Add(new RegisteredServer{Path=path});SaveRegistry(list);}}finally{gate.ReleaseMutex();}}
+        path=CanonicalWorkspace(path);using(var gate=new Mutex(false,"Global\\CraftHarborServerRegistry-"+System.Security.Principal.WindowsIdentity.GetCurrent().User.Value)){if(!gate.WaitOne(5000))throw new Exception("サーバー一覧の更新を待っています。もう一度お試しください。");try{var list=RegisteredServers();if(!list.Any(x=>string.Equals(CanonicalWorkspace(x.Path),path,StringComparison.OrdinalIgnoreCase))){list.Add(new RegisteredServer{Path=path});SaveRegistry(list);}}finally{gate.ReleaseMutex();}}
     }
-    int RegisteredCount(){return Math.Max(1,RegisteredServers().Count(x=>ValidWorkspace(x.Path)));}
+    static int RegisteredWorkspaceCount(){return Math.Max(1,RegisteredServers().Count(x=>ValidWorkspace(x.Path)));}
+    int RegisteredCount(){return RegisteredWorkspaceCount();}
+    static string MemoryGateName(){return "Global\\CraftHarborMemoryReservations-"+System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;}
     static List<MemoryReservation> LiveReservations()
     {
         var list=File.Exists(ReservationsFile)?new JavaScriptSerializer().Deserialize<List<MemoryReservation>>(File.ReadAllText(ReservationsFile)):new List<MemoryReservation>();var live=new List<MemoryReservation>();foreach(var r in list??new List<MemoryReservation>())try{using(var p=Process.GetProcessById(r.Pid)){if(!p.HasExited&&p.StartTime.ToUniversalTime().Ticks==r.StartTicks)live.Add(r);}}catch(ArgumentException){}catch(InvalidOperationException){}return live;
@@ -43,14 +45,16 @@ partial class CraftHarbor
     {
         double capacity=total-Math.Max(4,total*.08);double share=Math.Floor(capacity/Math.Max(1,count));double remaining=Math.Min(capacity-otherLimits,available-Math.Max(2,total*.04)-otherUncommitted);return Math.Max(0,(int)Math.Floor(Math.Min(share,remaining)));
     }
-    int CurrentSharedBudget(bool manual)
+    int CurrentSharedBudget(bool manual){return SharedBudgetFor(root,manual);}
+    static int SharedBudgetFor(string workspace,bool manual)
     {
-        double limits=0,uncommitted=0;foreach(var r in LiveReservations()){if(string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))continue;limits+=r.HeapGiB;try{using(var p=Process.GetProcessById(r.Pid))uncommitted+=Math.Max(0,r.HeapGiB-p.WorkingSet64/1073741824.0);}catch(ArgumentException){}}
-        var m=PhysicalMemory();return SharedBudget(m[0],m[1],manual?1:RegisteredCount(),limits,uncommitted);
+        double limits=0,uncommitted=0;foreach(var r in LiveReservations()){if(string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(workspace),StringComparison.OrdinalIgnoreCase))continue;limits+=r.HeapGiB;try{using(var p=Process.GetProcessById(r.Pid))uncommitted+=Math.Max(0,r.HeapGiB-p.WorkingSet64/1073741824.0);}catch(ArgumentException){}}
+        var m=PhysicalMemory();return SharedBudget(m[0],m[1],manual?1:RegisteredWorkspaceCount(),limits,uncommitted);
     }
-    void ReserveMemory(Process process,int heap)
+    void ReserveMemory(Process process,int heap){ReserveWorkspaceMemory(root,process,heap);}
+    static void ReserveWorkspaceMemory(string workspace,Process process,int heap)
     {
-        Directory.CreateDirectory(ManagerData);var live=LiveReservations();live.RemoveAll(r=>string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase));live.Add(new MemoryReservation{Workspace=CanonicalWorkspace(root),Pid=process.Id,StartTicks=process.StartTime.ToUniversalTime().Ticks,HeapGiB=heap});AtomicManagerWrite(ReservationsFile,new JavaScriptSerializer().Serialize(live));
+        Directory.CreateDirectory(ManagerData);var live=LiveReservations();live.RemoveAll(r=>string.Equals(CanonicalWorkspace(r.Workspace),CanonicalWorkspace(workspace),StringComparison.OrdinalIgnoreCase));live.Add(new MemoryReservation{Workspace=CanonicalWorkspace(workspace),Pid=process.Id,StartTicks=process.StartTime.ToUniversalTime().Ticks,HeapGiB=heap});AtomicManagerWrite(ReservationsFile,new JavaScriptSerializer().Serialize(live));
     }
     void OpenServersDialog(bool snapshot=false)
     {
@@ -63,7 +67,7 @@ partial class CraftHarbor
             var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=true,Padding=new Padding(0,10,0,0)};
             FlowBtn(actions,"URLから追加",delegate{ImportServerPack();refresh();});
             FlowBtn(actions,"既存サーバーを登録",delegate{using(var folder=new FolderBrowserDialog{Description="serverフォルダーの親フォルダーを選択",ShowNewFolderButton=false}){if(folder.ShowDialog()!=DialogResult.OK)return;if(!ValidWorkspace(folder.SelectedPath))throw new Exception("導入済みのJavaサーバーが見つかりません。");RegisterWorkspace(folder.SelectedPath);refresh();memoryPreviewAt=DateTime.MinValue;}});
-            FlowBtn(actions,"この画面で切替",delegate{EnsureStopped();string path=selected();OpenRegistered(path,true);dialog.Close();});FlowBtn(actions,"別ウィンドウで開く",delegate{OpenRegistered(selected(),false);});FlowBtn(actions,"登録解除",delegate{string path=selected();if(string.Equals(CanonicalWorkspace(path),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))throw new Exception("現在のサーバーはこの画面から解除できません。");if(MessageBox.Show("一覧から登録を解除します。サーバーのファイルやワールドは削除しません。","登録解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;using(var gate=new Mutex(false,"Local\\CraftHarborServerRegistry")){if(!gate.WaitOne(5000))throw new Exception("一覧更新中です。");try{SaveRegistry(RegisteredServers().Where(x=>!string.Equals(CanonicalWorkspace(x.Path),CanonicalWorkspace(path),StringComparison.OrdinalIgnoreCase)).ToList());}finally{gate.ReleaseMutex();}}refresh();memoryPreviewAt=DateTime.MinValue;});layout.Controls.Add(actions,0,2);
+            FlowBtn(actions,"この画面で切替",delegate{EnsureStopped();string path=selected();OpenRegistered(path,true);dialog.Close();});FlowBtn(actions,"別ウィンドウで開く",delegate{OpenRegistered(selected(),false);});FlowBtn(actions,"登録解除",delegate{string path=selected();if(string.Equals(CanonicalWorkspace(path),CanonicalWorkspace(root),StringComparison.OrdinalIgnoreCase))throw new Exception("現在のサーバーはこの画面から解除できません。");if(MessageBox.Show("一覧から登録を解除します。サーバーのファイルやワールドは削除しません。","登録解除",MessageBoxButtons.OKCancel)!=DialogResult.OK)return;using(var gate=new Mutex(false,"Global\\CraftHarborServerRegistry-"+System.Security.Principal.WindowsIdentity.GetCurrent().User.Value)){if(!gate.WaitOne(5000))throw new Exception("一覧更新中です。");try{SaveRegistry(RegisteredServers().Where(x=>!string.Equals(CanonicalWorkspace(x.Path),CanonicalWorkspace(path),StringComparison.OrdinalIgnoreCase)).ToList());}finally{gate.ReleaseMutex();}}refresh();memoryPreviewAt=DateTime.MinValue;});layout.Controls.Add(actions,0,2);
             StyleControls(dialog);ThemeDialog(dialog);if(snapshot)dialog.Shown+=delegate{dialog.BeginInvoke((Action)delegate{Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(root,"ui-servers.png"),System.Drawing.Imaging.ImageFormat.Png);}dialog.Close();});};
             dialog.ShowDialog(this);
         }

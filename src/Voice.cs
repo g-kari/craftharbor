@@ -25,6 +25,22 @@ partial class CraftHarbor
     }
     void ApplyVoiceAutomatically()
     {
-        if(!hosting.AutoVoice||Running(server)||preparingServer||backupBusy)return;if(hosting.VoiceAddresses==null)hosting.VoiceAddresses=new Dictionary<string,string>();var endpoints=DetectVoice();if(endpoints.Count==0)return;try{EnsureStopped();}catch(System.Net.Sockets.SocketException){return;}foreach(var item in endpoints){string address;if(!hosting.VoiceAddresses.TryGetValue(item.Port.ToString(),out address)){if(endpoints.Select(v=>v.Port).Distinct().Count()!=1)continue;address=hosting.VoiceAddress;}if(WriteVoiceAddress(item,address))Add("[音声] "+item.Name+"のUDP "+item.Port+"に対応する公開先を自動反映しました。");}
+        if(!hosting.AutoVoice||Running(server)||preparingServer||bootPreparing||backupBusy)return;
+        try{EnsureStopped();}catch(System.Net.Sockets.SocketException){return;}catch(InvalidOperationException){return;}
+        foreach(string message in ApplyAutomaticVoice(ServerDir,ServerPort,hosting))Add(message);
     }
+    static List<string> ApplyAutomaticVoice(string directory,int port,HostingOptions options)
+    {
+        var messages=new List<string>();if(!options.AutoVoice)return messages;
+        var map=options.VoiceAddresses??new Dictionary<string,string>();
+        var endpoints=VoiceEndpoints(directory,port);
+        foreach(var item in endpoints){
+            string value;if(!map.TryGetValue(item.Port.ToString(),out value)){
+                if(endpoints.Select(v=>v.Port).Distinct().Count()!=1)continue;value=options.VoiceAddress;
+            }
+            if(WriteVoiceAddress(item,value))messages.Add("[音声] "+item.Name+"のUDP "+item.Port+"に対応する公開先を自動反映しました。");
+        }
+        return messages;
+    }
+
 }

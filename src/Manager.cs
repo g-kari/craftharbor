@@ -17,7 +17,7 @@ partial class CraftHarbor : Form
     readonly string root = WorkspaceRoot;
     readonly ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
     Process server, tunnel;
-    volatile bool ready, stopping, backupBusy;
+    volatile bool ready, stopping, backupBusy, bootPreparing;
     bool closing, quitting;
     bool preparingServer,cancelServerStart;
     DateTime stopAt;
@@ -42,8 +42,13 @@ partial class CraftHarbor : Form
     [STAThread] static int Main(string[] args)
     {
 #if HOST_BINARY
+        if(Array.IndexOf(args,"--boot-check")>=0)return BootChecks(args);
         return PersistentHostMain(args);
 #else
+        if(Array.IndexOf(args,"--configure-boot-task")>=0)return ConfigureBootTask(args);
+        if(Array.IndexOf(args,"--remove-boot-tasks")>=0)return RemoveInstalledBootTasks();
+        if(Array.IndexOf(args,"--boot-check")>=0)return BootChecks(args);
+        if(args.Length>0&&args[0]=="--settings-check")return SettingsChecks(args);
         if(args.Length>0&&args[0]=="--host-check")return HostCheck(args);
         if(args.Length>0&&args[0]=="--pack-check")return PackCheck(args);
         if(args.Length>0&&args[0]=="--pack-download-check")return PackDownloadCheck(args);if(args.Length>0&&args[0]=="--metrics-readonly-check")return CheckLiveMetricRendering(args);
@@ -131,11 +136,11 @@ partial class CraftHarbor : Form
         var send=new ActionButton { Text="送信",Dock=DockStyle.Fill,FlatStyle=FlatStyle.Flat,BackColor=Card };send.Click+=delegate { SendCommand(); };cmdPanel.Controls.Add(send,1,0);
         command.KeyDown+=delegate(object s,KeyEventArgs e) { if(e.KeyCode==Keys.Enter) { SendCommand(); e.SuppressKeyPress=true; } }; logs.Controls.Add(cmdPanel,0,2);outer.Controls.Add(logs,0,4);
         var allow = new FlowLayoutPanel { Dock=DockStyle.Fill,Padding=new Padding(0,10,0,0),WrapContents=false };
-        allow.Controls.Add(new Label { Text="参加許可リスト",AutoSize=true,Margin=new Padding(0,5,12,0),ForeColor=Muted });
+        allow.Controls.Add(new Label { Text="参加許可（停止中も保存可）",AutoSize=true,Margin=new Padding(0,5,12,0),ForeColor=Muted });
         player=new TextBox { Width=170,BackColor=Card,ForeColor=Ink }; allow.Controls.Add(player);
         FlowBtn(allow,"参加を許可",delegate { AllowPlayer("add"); });
         FlowBtn(allow,"許可を解除",delegate { AllowPlayer("remove"); });
-        FlowBtn(allow,"許可リスト表示",delegate { Send("whitelist list"); });
+        FlowBtn(allow,"許可リスト表示",delegate { if(Running(server))Send("whitelist list");RefreshUsers();workspace.SelectedIndex=2; });
         outer.Controls.Add(allow,0,5);
         InitializeFeatures(outer,logs);
         UpgradeExperience(outer,cards,join,heading,tools,allow);
@@ -171,7 +176,7 @@ partial class CraftHarbor : Form
     async Task StartServerAsync()
     {
         if(Running(server)||backupBusy||preparingServer)return;
-        try{ApplyVoiceAutomatically();
+        try{PrepareSavedSettingsForStart();ApplyVoiceAutomatically();
         using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
         string launchTarget=LaunchTarget();
         ready=false;stopping=false;SaveSettings();
@@ -179,7 +184,7 @@ partial class CraftHarbor : Form
         string java=JavaPath();var options=new JavaOptions{Automatic=javaOptions.Automatic,Custom=javaOptions.Custom};int previewHeap=ResolveHeapBudget();
         var verified=await Task.Run(()=>PrepareJavaPlan(java,previewHeap,options));
         if(cancelServerStart||IsDisposed||Disposing)return;
-        using(var memoryGate=new Mutex(false,"Local\\CraftHarborMemoryReservations")){
+        using(var memoryGate=new Mutex(false,MemoryGateName())){
             if(!memoryGate.WaitOne(0))throw new Exception("他のサーバーがメモリを割り当てています。少し待ってからもう一度お試しください。");
             try{int heap=ResolveHeapBudget();var plan=PlanJava(verified.Runtime,heap,Environment.ProcessorCount,RegisteredCount(),HasModWorkload,options.Automatic,options.Custom);Add("[Java設定] "+plan.Reason+" / "+(plan.Tuning.Length==0?"JVM標準の調整":plan.Tuning));ApplyDistancesAtStartup(heap);server=LaunchPersistent("server",java,plan.Arguments+" "+launchTarget,ServerDir,heap);activeHeapGiB=heap;try{ReserveMemory(server,heap);}catch{HostCall(new HostRequest{Action="command",Text="stop"});throw;}
                 Add("[メモリ] "+(autoMemory.Checked?"自動・登録サーバー "+RegisteredCount()+"台":"手動")+"：最大 "+heap+" GiB / 初期 "+plan.InitialHeap+" GiB。必要に応じてJVMが拡張します。");
@@ -195,14 +200,17 @@ partial class CraftHarbor : Form
     void StopTunnel() { if(Running(tunnel)) { HostCall(new HostRequest{Action="stop-tunnel"});Add("[管理] 公開接続を停止しました。"); } }
     void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text); }
     void SendCommand() { string s=command.Text.Trim().TrimStart('/');if(s.Length==0)return;if(s=="stop")StopServer();else Send(s);command.Clear(); }
-    void AllowPlayer(string op) { string n=player.Text.Trim();if(!Regex.IsMatch(n,@"^[A-Za-z0-9_]{1,16}$"))throw new Exception("Java版ユーザー名を入力してください（英数字と _ 、16文字以内）。");Send("whitelist "+op+" "+n); }
     void Backup()
     {
+        CheckBootPreparation();
         if(Running(server)||backupBusy||preparingServer) { Add("[案内] サーバー停止・起動準備完了後にバックアップしてください。");return; }
         // Port check also prevents a second, externally started server being backed up live.
         using(var s=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { s.ExclusiveAddressUse=true;s.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
-        backupBusy=true;string dest=Path.Combine(root,"backups","craftharbor-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip");Directory.CreateDirectory(Path.GetDirectoryName(dest));Add("[管理] サーバー全体をバックアップしています…");
-        Task.Run(delegate { try { ZipFile.CreateFromDirectory(ServerDir,dest+".partial",CompressionLevel.Fastest,false);File.Move(dest+".partial",dest);Add("[管理] バックアップ完了："+dest);NotifyDiscord("backup","完全バックアップ完了","サーバーの完全バックアップを保存しました。"); }catch(Exception e){Add("[バックアップ失敗] "+e.Message);NotifyDiscord("backup","バックアップ失敗","バックアップを作成できませんでした。主催者は管理アプリのログを確認してください。");}finally{backupBusy=false;} });
+        string dest=Path.Combine(root,"backups","craftharbor-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip");Directory.CreateDirectory(Path.GetDirectoryName(dest));
+        var maintenance=WorkspaceMaintenanceLock(root);
+        try{CheckBootPreparation();}catch{maintenance.Dispose();throw;}
+        backupBusy=true;Add("[管理] サーバー全体をバックアップしています…");
+        Task.Run(delegate { try { ZipFile.CreateFromDirectory(ServerDir,dest+".partial",CompressionLevel.Fastest,false);File.Move(dest+".partial",dest);Add("[管理] バックアップ完了："+dest);NotifyDiscord("backup","完全バックアップ完了","サーバーの完全バックアップを保存しました。"); }catch(Exception e){Add("[バックアップ失敗] "+e.Message);NotifyDiscord("backup","バックアップ失敗","バックアップを作成できませんでした。主催者は管理アプリのログを確認してください。");}finally{maintenance.Dispose();backupBusy=false;} });
     }
     void TickState()
     {

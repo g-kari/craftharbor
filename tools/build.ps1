@@ -11,7 +11,7 @@ $compilerArgs = @('/nologo','/target:winexe','/platform:x64',('/win32icon:'+$ico
  ('/resource:'+(Join-Path $repoRoot 'assets\lighthouse-ui.png')+',CraftHarbor.lighthouse.png'),('/resource:'+(Join-Path $repoRoot 'assets\harbor-tall.png')+',CraftHarbor.harbor.png'),
  ('/resource:'+(Join-Path $repoRoot 'assets\harbor-icons.png')+',CraftHarbor.icons.png'),
  '/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll','/reference:System.IO.Compression.dll','/reference:System.IO.Compression.FileSystem.dll',
- '/reference:System.Windows.Forms.DataVisualization.dll','/reference:System.Web.Extensions.dll','/reference:System.Security.dll') + $sourcePaths
+ '/reference:System.Windows.Forms.DataVisualization.dll','/reference:System.Web.Extensions.dll','/reference:System.Security.dll','/reference:Microsoft.CSharp.dll') + $sourcePaths
 & $compiler @compilerArgs
 if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }
 $hostArgs=@('/define:HOST_BINARY',('/out:'+(Join-Path $dist 'CraftHarbor.Host.exe')))+@($compilerArgs | Where-Object { $_ -notlike '/out:*' })
@@ -23,7 +23,7 @@ foreach ($name in @('README.md','LICENSE','PRIVACY.md','CODE_SIGNING_POLICY.md')
     Copy-Item -LiteralPath (Join-Path $repoRoot $name) -Destination (Join-Path $dist $name) -Force
 }
 New-Item -ItemType Directory -Path (Join-Path $dist 'docs') -Force | Out-Null
-foreach($name in @('PERFORMANCE.md','PROFILES.md','DESIGN.md','RELEASE_NOTES.md','SIGNPATH.md')){
+foreach($name in @('PERFORMANCE.md','PROFILES.md','DESIGN.md','RELEASE_NOTES.md','SIGNPATH.md','BOOT_RECOVERY.md','SETTINGS.md')){
     Copy-Item -LiteralPath (Join-Path $repoRoot ('docs\'+$name)) -Destination (Join-Path $dist ('docs\'+$name)) -Force
 }
 Write-Output "Built $dist\CraftHarbor.exe. This build is unsigned."

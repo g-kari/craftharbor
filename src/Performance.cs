@@ -27,10 +27,10 @@ partial class CraftHarbor
     static DistancePlan PlanDistances(int logicalCpu,int heap,int registered,bool modded,int players)
     {
         int cpu=Math.Max(1,logicalCpu/Math.Max(1,registered));
-        int tier=Math.Min(cpu<4?0:cpu<8?1:2,heap<6?0:heap<10?1:2);
+        int tier=Math.Min(cpu<4?0:cpu<8?1:cpu<12?2:cpu<16?3:4,heap<6?0:heap<10?1:heap<16?2:heap<24?3:4);
         tier=Math.Max(0,tier-(players>=16?2:players>=8?1:0));
-        return new DistancePlan{View=(modded?new[]{6,8,10}:new[]{6,8,12})[tier],Simulation=(modded?new[]{4,5,6}:new[]{4,6,8})[tier],CpuShare=cpu,
-            Reason="論理CPUの目安 "+cpu+" / 割当上限 "+heap+" GiB / 登録 "+Math.Max(1,registered)+"台 / "+(modded?"MOD・プラグインあり":"Vanilla")+" / 想定 "+players+"人"};
+        return new DistancePlan{View=(modded?new[]{6,8,10,12,16}:new[]{6,10,12,16,20})[tier],Simulation=(modded?new[]{4,5,6,8,10}:new[]{4,6,8,10,12})[tier],CpuShare=cpu,
+            Reason="論理CPUの目安 "+cpu+" / 割当上限 "+heap+" GiB / 登録 "+Math.Max(1,registered)+"台 / 段階 "+(tier+1)+"/5 / "+(modded?"MOD・プラグインあり":"Vanilla")+" / 想定 "+players+"人"};
     }
     static bool SupportsSimulation(string version,string properties)
     {
@@ -59,16 +59,16 @@ partial class CraftHarbor
         simulationSetting.ValueChanged+=delegate{if(!updatingDistances&&!autoDistances.Checked)distances.ManualSimulation=(int)simulationSetting.Value;};
     }
     static int ClampDistance(int n){return Math.Max(2,Math.Min(32,n));}
-    int DistancePreviewHeap(){return autoMemory==null||autoMemory.Checked?CurrentSharedBudget(false):Math.Min((int)memory.Value,CurrentSharedBudget(true));}
+    int DistancePreviewHeap(){if(Running(server)&&activeHeapGiB>0)return activeHeapGiB;return autoMemory==null||autoMemory.Checked?CurrentSharedBudget(false):Math.Min((int)memory.Value,CurrentSharedBudget(true));}
     void RefreshDistancePreview()
     {
         if(autoDistances==null)return;distancePreviewAt=DateTime.UtcNow;int heap=DistancePreviewHeap();
         var plan=PlanDistances(Environment.ProcessorCount,heap,RegisteredCount(),HasModWorkload,(int)expectedPlayers.Value);
-        string props=File.ReadAllText(Path.Combine(ServerDir,"server.properties"));bool simulation=SupportsSimulation(profile.MinecraftVersion,props);
+        string props=File.ReadAllText(Path.Combine(ServerDir,"server.properties"));bool simulation=SupportsSimulation(EditingProfile().MinecraftVersion,props);
         updatingDistances=true;try{viewSetting.Value=autoDistances.Checked?plan.View:distances.ManualView;simulationSetting.Value=autoDistances.Checked?plan.Simulation:distances.ManualSimulation;}finally{updatingDistances=false;}
         viewSetting.Enabled=!autoDistances.Checked;simulationSetting.Enabled=!autoDistances.Checked&&simulation;expectedPlayers.Enabled=autoDistances.Checked;
         distancePreview.Text=(autoDistances.Checked?"次回の自動設定":"次回の手動設定")+"：描画 "+viewSetting.Value+" / "+(simulation?"シミュレーション "+simulationSetting.Value:"シミュレーションは非対応・未確認")+" chunks\n"+
-            (autoDistances.Checked?plan.Reason+"\n":"")+"起動直前に再計算します。人数は見積もり用で、最大参加人数は変更しません。\n保守的な初期値です。TPS・MSPTを確認して手動調整できます。"+(heap<4?"\n空きメモリが不足しています。起動時に再確認します。":"");
+            (autoDistances.Checked?plan.Reason+"\n":"")+"起動直前に再計算します。人数は見積もり用で、最大参加人数は変更しません。\nCPU・ヒープの段階に応じた目安です。稼働中のプレビューは現在の割当上限を使用します。TPS・MSPTを確認して手動調整できます。"+(heap<4?"\n空きメモリが不足しています。起動時に再確認します。":"");
     }
     void SaveDistanceSettings()
     {
@@ -83,18 +83,27 @@ partial class CraftHarbor
     }
     void ApplyDistancesAtStartup(int heap)
     {
-        EnsureStopped(true);var plan=PlanDistances(Environment.ProcessorCount,heap,RegisteredCount(),HasModWorkload,distances.ExpectedPlayers);
-        int view=distances.Automatic?plan.View:distances.ManualView,simulation=distances.Automatic?plan.Simulation:distances.ManualSimulation;
-        string path=Path.Combine(ServerDir,"server.properties"),original=File.ReadAllText(path);bool supported=SupportsSimulation(profile.MinecraftVersion,original);string next=DistanceProperties(original,view,simulation,supported);
+        EnsureStopped(true);
+        Add(ApplyStartupDistances(ServerDir,profile.MinecraftVersion,heap,RegisteredCount(),HasModWorkload,distances));
+    }
+    static string ApplyStartupDistances(string directory,string version,int heap,int registered,bool modded,DistanceOptions options)
+    {
+        var plan=PlanDistances(Environment.ProcessorCount,heap,registered,modded,options.ExpectedPlayers);
+        int view=options.Automatic?plan.View:ClampDistance(options.ManualView);
+        int simulation=options.Automatic?plan.Simulation:ClampDistance(options.ManualSimulation);
+        string path=Path.Combine(directory,"server.properties"),original=File.ReadAllText(path);
+        bool supported=SupportsSimulation(version,original);string next=DistanceProperties(original,view,simulation,supported);
         if(next!=original){string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temp,next,new UTF8Encoding(false));File.Replace(temp,path,path+".before-distance.bak");}
-        Add("[距離設定] "+(distances.Automatic?"自動":"手動")+"：描画 "+view+(supported?" / シミュレーション "+simulation:"")+" chunks。"+(distances.Automatic?plan.Reason:"") );
+        return "[距離設定] "+(options.Automatic?"自動":"手動")+"：描画 "+view+(supported?" / シミュレーション "+simulation:"")+" chunks。"+(options.Automatic?plan.Reason:"");
     }
     static void CheckDistancePolicy()
     {
         var low=PlanDistances(2,4,1,true,4);Require(low.View==6&&low.Simulation==4,"low spec distance budget");
-        var high=PlanDistances(24,33,1,true,4);Require(high.View==10&&high.Simulation==6,"modded high spec conservative cap");
-        var vanilla=PlanDistances(24,57,1,false,4);Require(vanilla.View==12&&vanilla.Simulation==8,"vanilla distance budget");
+        var high=PlanDistances(24,33,1,true,4);Require(high.View==16&&high.Simulation==10,"modded high spec headroom");
+        var vanilla=PlanDistances(24,57,1,false,4);Require(vanilla.View==20&&vanilla.Simulation==12,"vanilla distance budget");
         Require(PlanDistances(24,57,1,true,4).View==high.View,"extra RAM alone cannot unbound distances");
+        Require(PlanDistances(4,57,1,true,4).Simulation==5,"high RAM cannot compensate for low CPU");
+        Require(PlanDistances(16,16,1,true,4).Simulation==8,"upper middle hardware tier");
         Require(PlanDistances(8,8,4,true,4).View<PlanDistances(8,8,1,true,4).View,"multi-server CPU sharing");
         Require(PlanDistances(24,33,1,true,16).View<high.View,"expected player load reduces distance");
         string original="# keep\r\nonline-mode=true\r\nserver-port=25565\r\nview-distance=8\r\nsimulation-distance=6\r\ncustom=value\r\n";
