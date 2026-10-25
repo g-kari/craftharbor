@@ -179,8 +179,8 @@ partial class CraftHarbor
         BootOptions options;try{options=ReadBootJson<BootOptions>(BootOptionsPath(root))??new BootOptions();}catch{options=new BootOptions();}
         var publicConnection=CheckSetting(parent,"公開接続も起動する（playit.gg / ngrok / 直接公開）");publicConnection.Checked=options.Connect;
         var waitRow=new FlowLayoutPanel{AutoSize=true,WrapContents=true};
-        waitRow.Controls.Add(new Label{Text="Windows起動からの待機（秒）",AutoSize=true,Margin=new Padding(3,8,10,3)});
-        var delay=new HarborNumber{Minimum=0,Maximum=600,Value=Math.Max(0,Math.Min(600,options.DelaySeconds)),Width=100,AccessibleName="Windows起動後の待機秒数"};
+        waitRow.Controls.Add(new Label{Text="起動待機（秒）",AutoSize=true,Margin=new Padding(3,8,10,3)});
+        var delay=new HarborNumber{Minimum=0,Maximum=600,Value=Math.Max(0,Math.Min(600,options.DelaySeconds)),Width=100,BackColor=Bg,ForeColor=Ink,AccessibleName="Windows起動後の待機秒数"};
         waitRow.Controls.Add(delay);parent.Controls.Add(waitRow);
         var state=new Label{AutoSize=true,MaximumSize=new Size(740,0),AccessibleName="Windows自動復帰の登録状態",Text="状態を取得しています…"};
         var actions=new FlowLayoutPanel{AutoSize=true,WrapContents=true,MaximumSize=new Size(740,0)};

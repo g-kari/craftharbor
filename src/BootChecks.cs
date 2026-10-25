@@ -36,6 +36,10 @@ partial class CraftHarbor
             Require(!BootOwnerMatches("S-1-0-0")&&BootOwnerMatches(CurrentSid()),"owner SID binding");
             Require(BootTaskName(workspace,CurrentSid())!=BootTaskName(workspace+"-other",CurrentSid()),"per-profile task isolation");
             Require(MemoryGateName().StartsWith("Global\\"),"memory reservations cross sessions");
+            using(var maintenance=WorkspaceMaintenanceLock(workspace)) {
+                bool locked=false;try{using(var second=WorkspaceMaintenanceLock(workspace)){} }catch(IOException){locked=true;}
+                Require(locked,"backup and boot preflight cannot overlap");
+            }
             Require(BackgroundTunnelRequest(workspace,new HostingOptions{Provider="direct"},port)==null,"direct provider does not spawn a tunnel");
             bool blocked=false;try{BackgroundTunnelRequest(workspace,new HostingOptions{Provider="port-tool"},port);}catch(InvalidOperationException){blocked=true;}
             Require(blocked,"interactive port tool rejected");

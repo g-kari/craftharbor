@@ -23,6 +23,19 @@ class BootReport
 partial class CraftHarbor
 {
     static volatile bool bootManaged, bootInitializing, bootCancelled, bootTunnelCancelled;
+    static FileStream WorkspaceMaintenanceLock(string workspace)
+    {
+        try { return new FileStream(Path.Combine(workspace,".craftharbor-maintenance.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None); }
+        catch(IOException) { throw new IOException("バックアップ・復元・起動準備の完了を待ってください。"); }
+    }
+    void CheckBootPreparation()
+    {
+        if(!File.Exists(BootOptionsPath(root)))return;
+        try {
+            var status=HostCall(new HostRequest{Since=long.MaxValue});
+            if(status.BootInitializing)throw new InvalidOperationException("Windows起動時の自動復帰中です。運用画面から中断し、準備完了を待ってください。");
+        }catch(TimeoutException){}catch(IOException){}
+    }
     static string BootOptionsPath(string workspace) { return Path.Combine(workspace, "boot-options.json"); }
     static T ReadBootJson<T>(string path) where T : new()
     {
@@ -134,11 +147,13 @@ partial class CraftHarbor
                             if (!acquired) throw new IOException("別サーバーのメモリ割り当て完了を待っています。");
                             if (hostExit || bootCancelled) return;
                             if (!Running(hostedServer)) {
+                                using(var maintenance=WorkspaceMaintenanceLock(workspace)) {
                                 var request = BuildBootServerRequest(workspace);
                                 if (hostExit || bootCancelled) return;
                                 ExecuteHost(request, workspace);
                                 try { ReserveWorkspaceMemory(workspace, hostedServer, request.Heap); }
                                 catch { ExecuteHost(new HostRequest { Action = "command", Text = "stop" }, workspace); throw; }
+                                }
                             }
                         } finally { if (acquired) gate.ReleaseMutex(); }
                     }
