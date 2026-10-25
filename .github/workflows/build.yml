@@ -35,6 +35,9 @@ jobs:
       - name: Check Windows boot recovery with synthetic processes
         shell: powershell
         run: ./tools/check-boot.ps1
+      - name: Check GUI-independent scheduled maintenance with synthetic processes
+        shell: powershell
+        run: ./tools/check-schedules.ps1
       - name: Check pending settings and stopped whitelist editing
         shell: powershell
         run: ./tools/check-settings.ps1
@@ -74,6 +77,7 @@ jobs:
             dist/CraftHarbor-0.4.0-preview-windows-x64.zip
             dist/CraftHarbor-0.4.0-preview-windows-x64.zip.sha256
             dist/release-manifest.json
+            work/schedule-check-*/schedule-verification.txt
             work/settings-check-*/settings-verification.txt
             work/settings-check-*/ui-pending-settings.png
             work/boot-check-*/boot-verification.txt
@@ -87,6 +91,7 @@ jobs:
             work/integration-*/host-verification.txt
             work/integration-*/pack-check/pack-verification.txt
             work/installer-check-*/installer-verification.txt
+            work/ui-fixture-*/operations-ui-verification.txt
             work/ui-fixture-*/experience-verification.txt
             work/ui-fixture-*/ui-review-verification.txt
             work/ui-fixture-*/harbor-review-verification.txt

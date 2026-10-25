@@ -51,6 +51,7 @@ partial class CraftHarbor
     {
         string report=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"core-check-report.txt");
         try{
+            RunConnectionDiagnosticChecks();RunModCompatibilityChecks();RunSandboxChecks();RunScheduleChecks();
             CheckDistancePolicy();CheckJavaPolicy();Require(AutoHeap(64,60)==57,"64GiB high-availability heap policy");Require(AutoHeap(64,30)==27,"64GiB constrained heap policy");Require(AutoHeap(8,3)<4,"low memory rejected");Require(AutoHeap(4,1)==0,"very low memory rejected");
             Require(SharedBudget(64,60,2,0,0)==29,"two-server share");Require(SharedBudget(64,55,2,29,25)==27,"other JVM reserved growth protected");Require(SharedBudget(64,55,2,57,53)<4,"no overcommit after a full-size server is running");Require(WorkspaceMutexName("C:\\Servers\\One")==WorkspaceMutexName("c:\\servers\\one\\"),"workspace mutex canonicalization");
             string url="https://discord.com/api/webhooks/"+new string('1',18)+"/format_check_only";Require(ValidateWebhook(url)==url,"official webhook accepted");
@@ -58,7 +59,7 @@ partial class CraftHarbor
             var json=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(DiscordPayload("Test","Local validation only"));var mentions=(Dictionary<string,object>)json["allowed_mentions"];Require(((System.Collections.IEnumerable)mentions["parse"]).Cast<object>().Count()==0,"Discord mentions disabled");
             byte[] input=Encoding.UTF8.GetBytes("local test value");byte[] encrypted=ProtectedData.Protect(input,null,DataProtectionScope.CurrentUser);byte[] plain=ProtectedData.Unprotect(encrypted,null,DataProtectionScope.CurrentUser);Require(input.SequenceEqual(plain),"DPAPI round trip");Array.Clear(input,0,input.Length);Array.Clear(plain,0,plain.Length);
             string temp=Path.Combine(Path.GetTempPath(),"CraftHarborChecks",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(temp);string zip=Path.Combine(temp,"invalid.zip");using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create)){using(var w=new StreamWriter(archive.CreateEntry("../outside.txt").Open()))w.Write("invalid");}bool blocked=false;try{ExtractValidated(zip,Path.Combine(temp,"stage"));}catch(InvalidDataException){blocked=true;}Require(blocked&&!File.Exists(Path.Combine(temp,"outside.txt")),"ZIP traversal blocked");
-            File.WriteAllText(report,"PASS: distance/Java policies; memory policy, webhook URL validation, mention suppression, DPAPI round trip, ZIP traversal rejection. No network calls or server startup.");return 0;
+            File.WriteAllText(report,"PASS: connection diagnostic packet/claim policy, MOD manifest metadata/roles/privacy, update sandbox safety, schedule policy; distance/Java policies; memory policy, webhook URL validation, mention suppression, DPAPI round trip, ZIP traversal rejection. No network calls or server startup.");return 0;
         }catch(Exception e){File.WriteAllText(report,"FAIL: "+e);return 1;}
     }
 }
