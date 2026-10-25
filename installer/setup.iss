@@ -57,6 +57,7 @@ Source: "..\dist\docs\DESIGN.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\RELEASE_NOTES.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\SIGNPATH.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\dist\docs\BOOT_RECOVERY.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\dist\docs\SETTINGS.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\CraftHarbor"; Filename: "{app}\CraftHarbor.exe"

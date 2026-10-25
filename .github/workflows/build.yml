@@ -35,6 +35,9 @@ jobs:
       - name: Check Windows boot recovery with synthetic processes
         shell: powershell
         run: ./tools/check-boot.ps1
+      - name: Check pending settings and stopped whitelist editing
+        shell: powershell
+        run: ./tools/check-settings.ps1
       - name: Validate automatic options with installed Java
         shell: powershell
         run: ./tools/check-java.ps1
@@ -71,6 +74,7 @@ jobs:
             dist/CraftHarbor-0.4.0-preview-windows-x64.zip
             dist/CraftHarbor-0.4.0-preview-windows-x64.zip.sha256
             dist/release-manifest.json
+            work/settings-check-*/settings-verification.txt
             work/boot-check-*/boot-verification.txt
             work/boot-check-*/boot-task-definition.xml
             dist/core-check-report.txt

@@ -24,6 +24,8 @@ Recent logs use the same bounded `logRecords` collection as the console and show
 
 The existing metric cadence, staleness rule, 300-point/five-minute chart window and CSV source are unchanged. Stopped/unavailable metric values remain —. Retained graph points explicitly say they were collected before stopping. Startup, saving/stopping, missing addresses, unavailable integrations and failures keep their descriptive text.
 
+Server settings distinguish a saved next-start draft from the currently running profile. A visible restart-pending message accompanies saves; the active port and connection metadata remain unchanged until startup applies the draft. The participants page can also edit the whitelist while stopped, with verified account identities and file preservation on lookup or parse failure.
+
 ## Accessibility and verification
 
 Alt+1–9, Ctrl+L, F1, native Tab navigation and dialog Escape behavior remain. Focus and selected state do not rely on color alone. High contrast removes decorative art, uses white/black controls, and updates tables, chart text and distinct graph series. Font scaling also applies to the chart.

@@ -96,6 +96,7 @@ partial class CraftHarbor
         if (!File.Exists(eula) || !File.ReadAllLines(eula).Any(l => l.Trim().Equals("eula=true", StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException("Minecraft EULAへの同意をサーバー側で確認してください。");
         CheckBootPort(directory);
+        ApplyPendingServerSettings(workspace);
         var selected = ReadBootJson<ServerProfile>(Path.Combine(workspace, "manager-profile.json"));
         if (selected == null) throw new InvalidDataException("サーバープロファイルを読み取れません。");
         string target = ProfileLaunchTarget(directory, selected);

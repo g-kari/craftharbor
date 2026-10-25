@@ -17,6 +17,8 @@ playit maintains its own credential file in the user-controlled workspace. Neith
 Connection choices, selected tool paths and public voice addresses are stored in `connection-settings.json` in the workspace. Import receipts retain only the download host, archive SHA-256 and timestamp; they omit signed URL queries. A bounded ring of runtime logs stays in the local host process for reconnecting the manager.
 The console's selected source filter is stored as a number in `manager-log-filter.txt`. Filtering changes the displayed/exported view; the manager retains a bounded local in-memory buffer so sources can be switched without losing recent messages.
 
+Pending server settings are stored locally in `pending-server-settings.json` until the next managed startup. Whitelist edits retain a local pre-change backup; neither file is uploaded.
+
 ## Optional network actions
 
 When enabled and configured by the operator, Discord notifications send the server name and selected lifecycle/backup results to that operator's webhook channel.
@@ -27,6 +29,8 @@ The application can launch the separately installed playit agent. That agent con
 When playit is selected and an existing credential is present, the manager queries `https://api.playit.gg/v1/agents/rundata` approximately every 30 seconds to find this server's public TCP and voice UDP addresses. The credential is sent only to that fixed HTTPS API with redirects disabled. Creating tunnels with a read-only agent credential is not supported; the manager opens the official setup page.
 The operator can instead launch a separately installed ngrok agent, use direct port forwarding, or open a chosen external port tool. These programs have their own terms and network behavior. The manager does not change Windows protection settings or router settings automatically.
 Requested server ZIP downloads follow HTTPS redirects, use a temporary workspace and validate a supplied or preset SHA-256. The Create: Astral preset also downloads its pinned missing MOD from ForgeCDN and verifies its SHA-256. No downloaded startup script is automatically executed.
+When the operator adds a whitelist entry while an online-authenticated server is stopped, the application sends that entered Minecraft username to `https://api.mojang.com/users/profiles/minecraft/<name>` to verify the UUID. The request uses HTTPS without redirects, includes no login token, and is made only for that requested addition. Removal requires no lookup. Failed or mismatched responses do not modify the whitelist.
+
 The application also starts the separately installed Minecraft/modpack server. That server and its mods have their own network behavior, authentication, and privacy terms.
 Links opened from the application use the operating system's default browser.
 

@@ -59,6 +59,7 @@ partial class CraftHarbor
             Require(xml.SelectSingleNode("//t:Exec/t:Arguments",ns).InnerText.Contains(Q(workspace)),"absolute workspace passed explicitly");
             Require(xml.SelectSingleNode("//t:RegistrationTrigger",ns)==null,"registration cannot start server");
             File.WriteAllText(Path.Combine(workspace,"boot-task-definition.xml"),(string)definition.XmlText);
+            StageServerSettings(workspace,delegate(PendingServerSettings pending){pending.Properties["max-players"]="42";});
             host=Process.Start(new ProcessStartInfo(BootHostExecutable,"--boot-start --workspace "+Q(workspace)+" --owner-sid "+Q(CurrentSid())){UseShellExecute=false,CreateNoWindow=true});
             ui=new CraftHarbor();ui.timer.Stop();
             HostReply reply=null;DateTime deadline=DateTime.UtcNow.AddSeconds(45);
@@ -67,6 +68,7 @@ partial class CraftHarbor
                 Thread.Sleep(200);
             }
             Require(reply!=null&&reply.Ready&&reply.TunnelPid>0&&!reply.BootInitializing,"headless boot starts server and configured public connection");
+            Require(File.ReadAllText(Path.Combine(directory,"server.properties")).Contains("max-players=42")&&!File.Exists(PendingSettingsPath(workspace)),"headless boot consumes next-start draft");
             int serverPid=reply.ServerPid,tunnelPid=reply.TunnelPid;
             blocked=false;try{ui.CheckBootPreparation();}catch(InvalidOperationException){blocked=true;}Require(blocked,"fresh host status blocks maintenance before cached UI state catches up");
             Require(File.ReadAllText(Path.Combine(directory,"server.properties")).Contains("motd=keep-me"),"unrelated world/server properties preserved");

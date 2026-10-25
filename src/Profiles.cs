@@ -57,34 +57,35 @@ partial class CraftHarbor
     }
     void AddProfileSettings()
     {
+        var pending=ReadPendingSettings(root);var editing=pending.Profile??profile;
         var form=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];var group=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=new Padding(0,0,0,18)};
         group.Controls.Add(new Label{Text="サーバープロファイル",AutoSize=true,Font=new Font("Yu Gothic UI",13,FontStyle.Bold)});
-        profileName=TextSetting(group,"表示名",420);profileName.Text=profile.Name;
-        profileVersion=TextSetting(group,"Minecraftバージョン",200);profileVersion.Text=profile.MinecraftVersion;
-        profileClient=ChoiceSetting(group,"参加方法",new[]{"vanilla","modpack","custom"});profileClient.SelectedItem=profile.ClientMode;
-        profilePack=TextSetting(group,"MODパック名（任意）",420);profilePack.Text=profile.PackName;
-        profilePackVersion=TextSetting(group,"パック版（任意）",200);profilePackVersion.Text=profile.PackVersion;
-        profileUrl=TextSetting(group,"導入案内URL（任意）",500);profileUrl.Text=profile.ClientUrl;
-        profileLaunch=ChoiceSetting(group,"Java起動方式",new[]{"jar","argfile"});profileLaunch.SelectedItem=profile.LaunchMode;
-        profileJar=TextSetting(group,"JAR相対パス",420);profileJar.Text=profile.JarFile;
-        profileArgs=TextSetting(group,"引数ファイル相対パス",500);profileArgs.Text=profile.ArgumentsFile;
-        profileJava=TextSetting(group,"java.exe絶対パス（任意）",500);string javaPath=Path.Combine(root,"java-path.txt");if(File.Exists(javaPath))profileJava.Text=File.ReadAllText(javaPath).Trim();
-        profileSpark=ChoiceSetting(group,"spark検出",new[]{"auto","enabled","disabled"});profileSpark.SelectedItem=profile.SparkMode;
-        portSetting=NumberSetting(group,"接続ポート",1,65535,ServerPort);
-        group.Controls.Add(new Label{Text="jar: Vanilla / Paper / Purpur / Fabric等。argfile: 導入済みForge / NeoForgeのwin_args.txt等。\nJavaの必要バージョンはサーバーに合わせて指定してください。変更は停止中に保存し、次回起動から適用します。",AutoSize=true,MaximumSize=new Size(740,0),ForeColor=Muted});
-        var actions=new FlowLayoutPanel{AutoSize=true};FlowBtn(actions,"プロファイルを保存",delegate{SaveProfile();});FlowBtn(actions,"サーバー一覧",delegate{OpenServersDialog();});group.Controls.Add(actions);form.Controls.Add(group);form.Controls.SetChildIndex(group,0);
+        profileName=TextSetting(group,"表示名",420);profileName.Text=editing.Name;
+        profileVersion=TextSetting(group,"Minecraftバージョン",200);profileVersion.Text=editing.MinecraftVersion;
+        profileClient=ChoiceSetting(group,"参加方法",new[]{"vanilla","modpack","custom"});profileClient.SelectedItem=editing.ClientMode;
+        profilePack=TextSetting(group,"MODパック名（任意）",420);profilePack.Text=editing.PackName;
+        profilePackVersion=TextSetting(group,"パック版（任意）",200);profilePackVersion.Text=editing.PackVersion;
+        profileUrl=TextSetting(group,"導入案内URL（任意）",500);profileUrl.Text=editing.ClientUrl;
+        profileLaunch=ChoiceSetting(group,"Java起動方式",new[]{"jar","argfile"});profileLaunch.SelectedItem=editing.LaunchMode;
+        profileJar=TextSetting(group,"JAR相対パス",420);profileJar.Text=editing.JarFile;
+        profileArgs=TextSetting(group,"引数ファイル相対パス",500);profileArgs.Text=editing.ArgumentsFile;
+        profileJava=TextSetting(group,"java.exe絶対パス（任意）",500);string javaPath=Path.Combine(root,"java-path.txt");if(pending.HasJavaPath)profileJava.Text=pending.JavaPath;else if(File.Exists(javaPath))profileJava.Text=File.ReadAllText(javaPath).Trim();
+        profileSpark=ChoiceSetting(group,"spark検出",new[]{"auto","enabled","disabled"});profileSpark.SelectedItem=editing.SparkMode;
+        portSetting=NumberSetting(group,"接続ポート（次回起動）",1,65535,int.Parse(EditingServerProperties()["server-port"]));
+        group.Controls.Add(new Label{Text="jar: Vanilla / Paper / Purpur / Fabric等。argfile: 導入済みForge / NeoForgeのwin_args.txt等。\nJavaの必要バージョンはサーバーに合わせて指定してください。稼働中でも保存できます。変更はサーバー再起動後に適用します。",AutoSize=true,MaximumSize=new Size(740,0),ForeColor=Muted});
+        var actions=new FlowLayoutPanel{AutoSize=true};FlowBtn(actions,"プロファイルを保存",delegate{SaveProfile();});FlowBtn(actions,"サーバー一覧",delegate{OpenServersDialog();});group.Controls.Add(actions);form.Controls.Add(group);form.Controls.SetChildIndex(group,0);if(pendingSettingsStatus!=null)form.Controls.SetChildIndex(pendingSettingsStatus,0);
         Control[] fields={profileName,profileVersion,profileClient,profilePack,profilePackVersion,profileUrl,profileLaunch,profileJar,profileArgs,profileJava,profileSpark,portSetting};string[] labels={"サーバー表示名","Minecraftのバージョン","クライアント参加方法","MODパック名","MODパックのバージョン","参加者向け導入案内URL","Java起動方式","サーバーJARの相対パス","Java引数ファイルの相対パス","使用するjava.exeの絶対パス","spark検出方法","サーバー接続ポート"};for(int i=0;i<fields.Length;i++)fields[i].AccessibleName=labels[i];
         if(!FtbBackupsAvailable){backupHours.Enabled=backupKeep.Enabled=false;foreach(Control c in Descendants(workspace.TabPages[4])){if(c is Button&&(c.Text=="自動設定を保存"||c.Text=="今すぐワールド保存"))c.Enabled=false;if(c is Label&&c.Text.StartsWith("自動保存は同梱"))c.Text="FTB Backupsは未検出です。ワールド自動保存の設定は無効です。下の完全バックアップと復元は利用できます。";}}
     }
     static IEnumerable<Control> Descendants(Control control){foreach(Control child in control.Controls){yield return child;foreach(Control descendant in Descendants(child))yield return descendant;}}
     void SaveProfile()
     {
-        EnsureStopped();string name=profileName.Text.Trim();if(name.Length==0||name.Length>80)throw new Exception("表示名は1〜80文字で指定してください。");string url=profileUrl.Text.Trim();Uri u;if(url.Length>0&&(!Uri.TryCreate(url,UriKind.Absolute,out u)||u.Scheme!="https"))throw new Exception("導入案内URLはhttpsのページを指定してください。");
+        string name=profileName.Text.Trim();if(name.Length==0||name.Length>80)throw new Exception("表示名は1〜80文字で指定してください。");string url=profileUrl.Text.Trim();Uri u;if(url.Length>0&&(!Uri.TryCreate(url,UriKind.Absolute,out u)||u.Scheme!="https"))throw new Exception("導入案内URLはhttpsのページを指定してください。");
         string java=profileJava.Text.Trim();if(java.Length>0&&(!Path.IsPathRooted(java)||!File.Exists(java)))throw new Exception("java.exeの絶対パスを確認してください。");
         string mode=Convert.ToString(profileLaunch.SelectedItem);string path=mode=="argfile"?profileArgs.Text.Trim():profileJar.Text.Trim();if(!File.Exists(RelativeServerPath(path)))throw new Exception("起動ファイルが見つかりません。");
         var next=new ServerProfile{Name=name,MinecraftVersion=profileVersion.Text.Trim(),ClientMode=Convert.ToString(profileClient.SelectedItem),PackName=profilePack.Text.Trim(),PackVersion=profilePackVersion.Text.Trim(),ClientUrl=url,LaunchMode=mode,JarFile=profileJar.Text.Trim(),ArgumentsFile=profileArgs.Text.Trim(),SparkMode=Convert.ToString(profileSpark.SelectedItem)};
-        File.WriteAllText(ProfileFile,new JavaScriptSerializer().Serialize(next),new UTF8Encoding(false));File.WriteAllText(Path.Combine(root,"java-path.txt"),java,new UTF8Encoding(false));string props=Path.Combine(ServerDir,"server.properties"),text=File.ReadAllText(props);text=System.Text.RegularExpressions.Regex.Replace(text,@"(?m)^server-port=.*$","");text=text.TrimEnd()+Environment.NewLine+"server-port="+portSetting.Value+Environment.NewLine;File.WriteAllText(props,text,new UTF8Encoding(false));profile=next;
-        RefreshProfileLabels();RefreshGuide();Add("[プロファイル] 保存しました。次回起動に適用されます。");
+        StageServerSettings(root,delegate(PendingServerSettings pending){pending.Profile=next;pending.HasJavaPath=true;pending.JavaPath=java;pending.Properties["server-port"]=portSetting.Value.ToString();});
+        RefreshPendingSettingsStatus();RefreshDistancePreview();Add("[プロファイル] 次回起動用に保存しました。接続ポート・バージョンの変更は再起動後に反映します。");
     }
     void RefreshProfileLabels()
     {
