@@ -68,6 +68,7 @@ partial class CraftHarbor
             }
             Require(reply!=null&&reply.Ready&&reply.TunnelPid>0&&!reply.BootInitializing,"headless boot starts server and configured public connection");
             int serverPid=reply.ServerPid,tunnelPid=reply.TunnelPid;
+            blocked=false;try{ui.CheckBootPreparation();}catch(InvalidOperationException){blocked=true;}Require(blocked,"fresh host status blocks maintenance before cached UI state catches up");
             Require(File.ReadAllText(Path.Combine(directory,"server.properties")).Contains("motd=keep-me"),"unrelated world/server properties preserved");
             using(var duplicate=Process.Start(new ProcessStartInfo(BootHostExecutable,"--workspace "+Q(workspace)){UseShellExecute=false,CreateNoWindow=true})) {
                 Require(duplicate.WaitForExit(5000)&&duplicate.ExitCode==0,"duplicate host exits without replacing processes");
