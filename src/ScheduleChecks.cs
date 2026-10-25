@@ -163,7 +163,11 @@ partial class CraftHarbor
             var state=ReadBootJson<ScheduleRunState>(ScheduleStatePath(workspace));
             Require(state.Claimed&&File.Exists(state.Backup),"completed occurrence and backup recorded durably");
             using(var zip=ZipFile.OpenRead(state.Backup)){
-                Require(zip.GetEntry("world/level.dat")!=null,"full stopped-server backup contains original world");
+                // .NET Framework's Windows ZIP writer can retain backslashes. The restore path
+                // already normalizes both separators; verify the actual world bytes, not its spelling.
+                var world=zip.Entries.SingleOrDefault(e=>e.FullName.Replace('\\','/')=="world/level.dat");
+                Require(world!=null,"full stopped-server backup contains original world");
+                using(var reader=new StreamReader(world.Open()))Require(reader.ReadToEnd()=="synthetic original world bytes","stopped-server ZIP preserves exact original world content");
             }
             string[] commands=File.ReadAllLines(Path.Combine(workspace,"server","schedule-commands.txt"));
             int save=Array.IndexOf(commands,"save-all flush"),stop=Array.IndexOf(commands,"stop");
