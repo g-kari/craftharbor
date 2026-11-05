@@ -6,7 +6,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using System.Windows.Forms;
 
 partial class CraftHarbor
 {
@@ -14,6 +16,73 @@ partial class CraftHarbor
     {
         using(var socket=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)){
             socket.Bind(new IPEndPoint(IPAddress.Loopback,0));return ((IPEndPoint)socket.LocalEndPoint).Port;
+        }
+    }
+    static void WaitForStartupCheck(Func<bool> completed,string message)
+    {
+        DateTime deadline=DateTime.UtcNow.AddSeconds(10);
+        while(!completed()&&DateTime.UtcNow<deadline){Application.DoEvents();Thread.Sleep(20);}
+        Require(completed(),message);
+    }
+    void CheckStartupCancellation(string fixture)
+    {
+        string control=Path.Combine(Path.GetDirectoryName(fixture),"startup-fixture"),javaFile=Path.Combine(root,"java-path.txt");
+        byte[] originalJava=File.Exists(javaFile)?File.ReadAllBytes(javaFile):null;
+        bool automatic=autoMemory.Checked;decimal originalMemory=memory.Value;var originalHosting=hosting;
+        Task startup=null;
+        Func<int> launches=()=>{try{return File.Exists(control+".launches")?File.ReadAllLines(control+".launches").Length:0;}catch(IOException){return -1;}};
+        try{
+            File.WriteAllText(javaFile,fixture);autoMemory.Checked=false;memory.Value=4;
+            hosting=new HostingOptions{Provider="direct",AutoVoice=false};
+            workspace.SelectedIndex=5;Show();Application.DoEvents();
+            var allStop=Descendants(this).OfType<Button>().Single(button=>button.Text=="全部停止");
+            Require(allStop.Visible&&allStop.Enabled,"all-stop control is available during startup preparation");
+            int beforeTunnel=launches();tunnel=LaunchPersistent("tunnel",fixture,"",ServerDir,0);
+            WaitForStartupCheck(()=>Running(tunnel)&&launches()==beforeTunnel+1,"synthetic tunnel records its launch before the cancellation baseline");
+            int before=launches();
+            foreach(bool fail in new[]{false,true}){
+                int cancellations=queue.ToArray().Count(line=>line=="[管理] 起動準備を中止しました。サーバーは起動していません。"),errors=queue.ToArray().Count(line=>line.StartsWith("[起動エラー]"));
+                foreach(string suffix in new[]{".started",".release",".fail",".probes",".results"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+                File.WriteAllText(control+".hold","synthetic Java preflight gate");if(fail)File.WriteAllText(control+".fail","synthetic failure");
+                startup=StartServerAsync();
+                WaitForStartupCheck(()=>File.Exists(control+".started")||startup.IsCompleted,"synthetic Java probe reaches held preflight");
+                Require(File.Exists(control+".started")&&preparingServer&&!startup.IsCompleted,"real startup path is awaiting Java preflight");
+                allStop.PerformClick();allStop.PerformClick();
+                Require(cancelServerStart&&preparingServer&&!Running(tunnel),"repeated all-stop cancels startup and stops the synthetic tunnel without releasing the preparation guard");
+                Require(StartServerAsync().IsCompleted&&cancelServerStart&&preparingServer,"duplicate start cannot reset cancellation while the old probe is pending");
+                RequestRestart();Require(cancelServerStart&&preparingServer&&!restartPending&&File.ReadAllLines(control+".probes").Length==1,"restart during cancelled preparation cannot queue or launch a second probe");
+                File.WriteAllText(control+".release","release");
+                WaitForStartupCheck(()=>startup.IsCompleted,"cancelled startup completes after the probe is released");startup.GetAwaiter().GetResult();
+                Require(File.ReadAllLines(control+".results").SequenceEqual(fail?new[]{"deliberate-failure"}:new[]{"settings-success","flags-success"}),"cancelled probe outcome is the intended success or failure, never a gate timeout");
+                Require(!preparingServer&&!Running(server)&&!Running(tunnel)&&launches()==before,"no server launch follows all-stop, even when the cancelled probe fails");
+                Require(detail.Text.Contains("起動準備を中止しました"),"cancelled preflight is reported as cancellation rather than a startup failure");
+                Require(queue.ToArray().Count(line=>line=="[管理] 起動準備を中止しました。サーバーは起動していません。") == cancellations+1&&queue.ToArray().Count(line=>line.StartsWith("[起動エラー]"))==errors,"one cancellation notice and no misleading startup error");
+                RefreshDashboardPresentation(false,false);Require(start.Enabled&&!backupBusy,"a cancelled preparation returns to an available start control");
+            }
+            foreach(string suffix in new[]{".hold",".started",".release"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+            startup=StartServerAsync();WaitForStartupCheck(()=>startup.IsCompleted,"synthetic preflight failure completes");startup.GetAwaiter().GetResult();
+            Require(!cancelServerStart&&!preparingServer&&!Running(server)&&detail.Text.StartsWith("起動できませんでした"),"a fresh failed attempt is not hidden by an earlier cancellation");
+            File.Delete(control+".fail");
+            startup=StartServerAsync();WaitForStartupCheck(()=>startup.IsCompleted,"fresh synthetic startup completes");startup.GetAwaiter().GetResult();
+            WaitForStartupCheck(()=>{PollPersistentHost(true);return ready&&Running(server);},"fresh explicit start reaches ready after cancellation");
+            Require(!cancelServerStart&&launches()==before+1,"fresh start clears the old cancellation and launches once");
+            StartServerAsync().GetAwaiter().GetResult();Require(launches()==before+1,"repeated start while running does not launch twice");
+            RequestRestart();Require(restartPending&&!cancelServerStart,"an intentional restart is not cancelled by its graceful-stop step");
+            Require(server.WaitForExit(5000),"restart stops the first synthetic server gracefully");PollPersistentHost(true);
+            previousRunning=true;UpdateFeatures(false,false);
+            WaitForStartupCheck(()=>{PollPersistentHost(true);return !preparingServer&&ready&&Running(server)&&launches()==before+2;},"intentional restart launches the next synthetic server");
+            Require(!restartPending&&launches()==before+2,"intentional restart is consumed once");
+            allStop.PerformClick();Require(server.WaitForExit(5000),"all-stop still gracefully stops an already running synthetic server");PollPersistentHost(true);
+            Require(!Running(server)&&!Running(tunnel)&&!restartPending,"all-stop leaves synthetic processes stopped without a queued restart");
+        }finally{
+            if(preparingServer)cancelServerStart=true;
+            File.WriteAllText(control+".release","release during cleanup");
+            DateTime deadline=DateTime.UtcNow.AddSeconds(10);
+            while((preparingServer||startup!=null&&!startup.IsCompleted)&&DateTime.UtcNow<deadline){Application.DoEvents();Thread.Sleep(20);}
+            try{if(Running(server)){HostCall(new HostRequest{Action="command",Text="stop"});server.WaitForExit(5000);}if(Running(tunnel))HostCall(new HostRequest{Action="stop-tunnel"});}catch{}
+            foreach(string suffix in new[]{".hold",".started",".release",".fail",".probes",".results"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+            if(originalJava==null)File.Delete(javaFile);else File.WriteAllBytes(javaFile,originalJava);
+            hosting=originalHosting;memory.Value=originalMemory;autoMemory.Checked=automatic;Hide();
         }
     }
     static int SettingsChecks(string[] args)
@@ -88,8 +157,9 @@ partial class CraftHarbor
             blocked=false;try{StageServerSettings(WorkspaceRoot,delegate(PendingServerSettings draft){draft.Properties["motd"]="replace";});}catch{blocked=true;}
             Require(blocked&&File.ReadAllText(PendingSettingsPath(WorkspaceRoot))=="{broken","damaged draft is not silently overwritten");
             File.Delete(PendingSettingsPath(WorkspaceRoot));CheckDistancePolicy();
+            ui.CheckStartupCancellation(Path.GetFullPath(args[2]));
             ui.HostCall(new HostRequest{Action="shutdown-idle"});
-            File.WriteAllText(report,"PASS: runtime settings/profile save without restart or active-port change; durable next-start draft; UI reopening; occupied-port rejection; shutdown rewrite preservation; atomic next-start apply and backup; unrelated properties preserved; per-profile isolation; whitelist add/remove/UUID validation/deduplication/corrupt-file protection; manual and five-tier distance policies and running heap preview. Synthetic processes only; no Minecraft server, real account lookup, external tunnel or PC restart.");
+            File.WriteAllText(report,"PASS: runtime settings/profile save without restart or active-port change; durable next-start draft; UI reopening; occupied-port rejection; shutdown rewrite preservation; atomic next-start apply and backup; unrelated properties preserved; per-profile isolation; whitelist add/remove/UUID validation/deduplication/corrupt-file protection; manual and five-tier distance policies and running heap preview; all-stop during held successful/failed Java preflight, repeated stop/start, fresh retry, graceful stop and intentional restart. Synthetic processes only; no Minecraft server, real account lookup, external tunnel or PC restart.");
             return 0;
         }catch(Exception error){File.WriteAllText(report,"FAIL: "+error);return 1;}
         finally {
