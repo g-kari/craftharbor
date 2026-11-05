@@ -42,7 +42,7 @@ partial class CraftHarbor
             int before=launches();
             foreach(bool fail in new[]{false,true}){
                 int cancellations=queue.ToArray().Count(line=>line=="[管理] 起動準備を中止しました。サーバーは起動していません。"),errors=queue.ToArray().Count(line=>line.StartsWith("[起動エラー]"));
-                foreach(string suffix in new[]{".started",".release",".fail",".probes"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+                foreach(string suffix in new[]{".started",".release",".fail",".probes",".results"})if(File.Exists(control+suffix))File.Delete(control+suffix);
                 File.WriteAllText(control+".hold","synthetic Java preflight gate");if(fail)File.WriteAllText(control+".fail","synthetic failure");
                 startup=StartServerAsync();
                 WaitForStartupCheck(()=>File.Exists(control+".started")||startup.IsCompleted,"synthetic Java probe reaches held preflight");
@@ -53,6 +53,7 @@ partial class CraftHarbor
                 RequestRestart();Require(cancelServerStart&&preparingServer&&!restartPending&&File.ReadAllLines(control+".probes").Length==1,"restart during cancelled preparation cannot queue or launch a second probe");
                 File.WriteAllText(control+".release","release");
                 WaitForStartupCheck(()=>startup.IsCompleted,"cancelled startup completes after the probe is released");startup.GetAwaiter().GetResult();
+                Require(File.ReadAllLines(control+".results").SequenceEqual(fail?new[]{"deliberate-failure"}:new[]{"settings-success","flags-success"}),"cancelled probe outcome is the intended success or failure, never a gate timeout");
                 Require(!preparingServer&&!Running(server)&&!Running(tunnel)&&launches()==before,"no server launch follows all-stop, even when the cancelled probe fails");
                 Require(detail.Text.Contains("起動準備を中止しました"),"cancelled preflight is reported as cancellation rather than a startup failure");
                 Require(queue.ToArray().Count(line=>line=="[管理] 起動準備を中止しました。サーバーは起動していません。") == cancellations+1&&queue.ToArray().Count(line=>line.StartsWith("[起動エラー]"))==errors,"one cancellation notice and no misleading startup error");
@@ -79,7 +80,7 @@ partial class CraftHarbor
             DateTime deadline=DateTime.UtcNow.AddSeconds(10);
             while((preparingServer||startup!=null&&!startup.IsCompleted)&&DateTime.UtcNow<deadline){Application.DoEvents();Thread.Sleep(20);}
             try{if(Running(server)){HostCall(new HostRequest{Action="command",Text="stop"});server.WaitForExit(5000);}if(Running(tunnel))HostCall(new HostRequest{Action="stop-tunnel"});}catch{}
-            foreach(string suffix in new[]{".hold",".started",".release",".fail",".probes"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+            foreach(string suffix in new[]{".hold",".started",".release",".fail",".probes",".results"})if(File.Exists(control+suffix))File.Delete(control+suffix);
             if(originalJava==null)File.Delete(javaFile);else File.WriteAllBytes(javaFile,originalJava);
             hosting=originalHosting;memory.Value=originalMemory;autoMemory.Checked=automatic;Hide();
         }
