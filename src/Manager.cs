@@ -177,11 +177,12 @@ partial class CraftHarbor : Form
     async Task StartServerAsync()
     {
         if(Running(server)||backupBusy||preparingServer)return;
+        cancelServerStart=false;
         try{PrepareSavedSettingsForStart();ApplyVoiceAutomatically();
         using(var listener=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp)) { listener.ExclusiveAddressUse=true;listener.Bind(new IPEndPoint(IPAddress.Loopback,ServerPort)); }
         string launchTarget=LaunchTarget();
         ready=false;stopping=false;SaveSettings();
-        preparingServer=true;cancelServerStart=false;start.Enabled=false;detail.Text="Javaのバージョンと起動オプションを確認しています…";serverState.Text="サーバー：Javaを確認中…";
+        preparingServer=true;start.Enabled=false;detail.Text="Javaのバージョンと起動オプションを確認しています…";serverState.Text="サーバー：Javaを確認中…";
         string java=JavaPath();var options=new JavaOptions{Automatic=javaOptions.Automatic,Custom=javaOptions.Custom};int previewHeap=ResolveHeapBudget();
         var verified=await Task.Run(()=>PrepareJavaPlan(java,previewHeap,options));
         if(cancelServerStart||IsDisposed||Disposing)return;
@@ -194,9 +195,9 @@ partial class CraftHarbor : Form
         ResetMetrics();
         RefreshProfileLabels();
         Add("[管理] サーバーを起動しています。初回は数分かかる場合があります。");
-        }catch(Exception e){if(!IsDisposed){detail.Text="起動できませんでした："+e.Message;Add("[起動エラー] "+e.Message);}}finally{preparingServer=false;}
+        }catch(Exception e){if(!IsDisposed&&!Disposing&&!cancelServerStart){detail.Text="起動できませんでした："+e.Message;Add("[起動エラー] "+e.Message);}}finally{preparingServer=false;if(cancelServerStart&&!IsDisposed&&!Disposing){detail.Text="起動準備を中止しました。サーバーは起動していません。";Add("[管理] 起動準備を中止しました。サーバーは起動していません。");}}
     }
-    void StopServer() { CancelScheduledFromUi();if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
+    void StopServer() { if(preparingServer)cancelServerStart=true;CancelScheduledFromUi();if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
     void StartTunnel(){StartHosting();}
     void StopTunnel() { if(Running(tunnel)) { HostCall(new HostRequest{Action="stop-tunnel"});Add("[管理] 公開接続を停止しました。"); } }
     void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text); }
