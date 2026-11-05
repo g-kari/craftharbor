@@ -1,9 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "helpers:pinGitHubActionDigests"
-  ],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "automerge": false,
   "automergeType": "pr",
   "platformAutomerge": false,
@@ -15,26 +12,24 @@
   "internalChecksFilter": "strict",
   "packageRules": [
     {
-      "description": "Automerge non-major updates for the existing official GitHub Actions after the release-age and CI checks pass.",
-      "matchManagers": [
-        "github-actions"
-      ],
+      "description": "Keep these updates manual until required real CI checks are enforced and verified.",
+      "matchManagers": ["github-actions"],
       "matchPackageNames": [
         "actions/checkout",
         "actions/upload-artifact",
         "actions/download-artifact"
       ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest",
-        "pinDigest"
-      ],
-      "automerge": true
+      "matchUpdateTypes": ["minor", "patch", "digest", "pinDigest"],
+      "automerge": false
     },
     {
       "description": "Review pre-1.0 dependency changes explicitly.",
       "matchCurrentVersion": "/^v?0\\./",
+      "automerge": false
+    },
+    {
+      "description": "Fail closed: keep every dependency manual until required real CI checks are enforced and verified.",
+      "matchPackageNames": ["*"],
       "automerge": false
     }
   ],
