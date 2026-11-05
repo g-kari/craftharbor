@@ -6,6 +6,10 @@ static class Fixture
     static int Main(string[] args)
     {
         string control=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"startup-fixture");
+        if(Array.IndexOf(args,"--probe-timeout-fixture")>=0){
+            File.WriteAllText(control+".timeout-pid",System.Diagnostics.Process.GetCurrentProcess().Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Thread.Sleep(30000);return 0;
+        }
         if(Array.IndexOf(args,"-version")>=0){
             bool settings=Array.IndexOf(args,"-XshowSettings:properties")>=0;
             if(settings&&File.Exists(control+".hold")){
@@ -16,6 +20,7 @@ static class Fixture
             }
             if(File.Exists(control+".fail")){File.AppendAllText(control+".results","deliberate-failure\n");return 1;}
             Console.Error.WriteLine("java.specification.version = 17\nsun.arch.data.model = 64\njava.vm.name = OpenJDK 64-Bit Server VM");
+            if(File.Exists(control+".private-output"))Console.Error.WriteLine("user.home = PRIVATE-FIXTURE-DO-NOT-LOG");
             File.AppendAllText(control+".results",settings?"settings-success\n":"flags-success\n");return 0;
         }
         File.AppendAllText(control+".launches","start\n");

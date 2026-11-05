@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -23,6 +24,52 @@ partial class CraftHarbor
         DateTime deadline=DateTime.UtcNow.AddSeconds(10);
         while(!completed()&&DateTime.UtcNow<deadline){Application.DoEvents();Thread.Sleep(20);}
         Require(completed(),message);
+    }
+    static bool JavaProbeFixtureExited(Process child)
+    {
+        try{return child.HasExited;}catch(InvalidOperationException){return false;}catch(System.ComponentModel.Win32Exception){return false;}
+    }
+    static void CheckJavaProbeDiagnostics(string fixture)
+    {
+        string control=Path.Combine(Path.GetDirectoryName(fixture),"startup-fixture"),report=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"java-verification.txt");
+        byte[] originalReport=File.Exists(report)?File.ReadAllBytes(report):null;
+        const string fields=@"state=(?:start-requested|started|wait-exited|wait-timeout|kill-attempt|kill-requested|kill-not-running|kill-failed|streams-read|final) elapsed_ms=\d+ started=(?:true|false) wait_exited=(?:true|false|not-waited) exited=(?:true|false|unknown|not-started) exit_code=(?:-?\d+|unknown) stderr=(?:not-started|pending|completed:\d+|faulted|cancelled) stdout=(?:not-started|pending|completed:\d+|faulted|cancelled)";
+        Func<string,bool> safeReport=text=>text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Skip(1).All(line=>Regex.IsMatch(line,@"^probe=(?:runtime-properties|planned-flags) "+fields+"$"))&&!text.Contains("PRIVATE-FIXTURE-DO-NOT-LOG")&&!text.Contains(fixture);
+        try{
+            File.WriteAllText(control+".private-output","synthetic private property marker");
+            Require(CheckInstalledJava(new[]{"--java-check",fixture})==0,"synthetic installed-Java diagnostics succeed");
+            string text=File.ReadAllText(report);
+            Require(text.StartsWith("PASS:")&&safeReport(text)&&text.Contains("probe=runtime-properties state=final")&&text.Contains("probe=planned-flags state=final"),"both successful diagnostic phases use only safe fixed fields");
+            Require(text.Split('\n').Where(line=>line.Contains("state=final")).All(line=>line.Contains("wait_exited=true exited=true exit_code=0")&&line.Contains("stderr=completed:")&&line.Contains("stdout=completed:")),"successful probes record confirmed exits and completed stream lengths");
+            File.WriteAllText(control+".fail","synthetic nonzero exit");
+            Require(CheckInstalledJava(new[]{"--java-check",fixture})==1,"nonzero Java still fails validation");text=File.ReadAllText(report);
+            Require(text.StartsWith("FAIL:")&&safeReport(text)&&text.Contains("wait_exited=true exited=true exit_code=1")&&!text.Contains("probe=planned-flags"),"failed metadata phase is identified without raw output or error text");
+            File.Delete(control+".fail");
+            Require(CheckInstalledJava(new[]{"--java-check",Path.Combine(Path.GetDirectoryName(fixture),"PRIVATE-FIXTURE-DO-NOT-LOG.exe")})==1,"missing executable still fails validation");text=File.ReadAllText(report);
+            Require(text.StartsWith("FAIL:")&&safeReport(text)&&text.Contains("state=final")&&text.Contains("started=false wait_exited=not-waited exited=not-started exit_code=unknown"),"start failure does not include the executable path or arbitrary exception message");
+            var timeout=new List<string>();bool rejected=false;
+            try{RunJavaProbe(fixture,"--probe-timeout-fixture",state=>timeout.Add("probe=runtime-properties "+state));}catch(InvalidOperationException){rejected=true;}
+            Require(rejected&&timeout.Any(line=>line.Contains("state=wait-timeout")&&line.Contains("started=true wait_exited=false"))&&timeout.Any(line=>line.Contains("state=kill-requested")||line.Contains("state=kill-not-running")),"unchanged eight-second probe timeout records its phase and kill request without claiming confirmed termination");
+            Require(timeout.All(line=>Regex.IsMatch(line,@"^probe=runtime-properties "+fields+"$"))&&timeout.Last().Contains("state=final"),"timeout diagnostics contain only fixed fields and a final observation");
+        }finally{
+            try{
+                if(File.Exists(control+".timeout-pid")){
+                    int pid=int.Parse(File.ReadAllText(control+".timeout-pid"),System.Globalization.CultureInfo.InvariantCulture);Process child=null;
+                    try{child=Process.GetProcessById(pid);}catch(ArgumentException){}
+                    if(child!=null)using(child){
+                        try{
+                            if(!JavaProbeFixtureExited(child)){
+                                var module=child.MainModule;
+                                if(!JavaProbeFixtureExited(child)){Require(module!=null&&string.Equals(module.FileName,fixture,StringComparison.OrdinalIgnoreCase),"timeout cleanup targets only its own synthetic executable");child.Kill();Require(child.WaitForExit(5000),"synthetic timeout process cleanup completes");}
+                            }
+                        }catch(InvalidOperationException){Require(JavaProbeFixtureExited(child),"timeout cleanup confirms an exit after a process-state race");}catch(System.ComponentModel.Win32Exception){Require(JavaProbeFixtureExited(child),"timeout cleanup confirms an exit after a module-access race");}
+                    }
+                }
+            }finally{
+                foreach(string suffix in new[]{".private-output",".fail",".results",".timeout-pid"})if(File.Exists(control+suffix))File.Delete(control+suffix);
+                if(originalReport==null)File.Delete(report);else File.WriteAllBytes(report,originalReport);
+            }
+        }
     }
     void CheckStartupCancellation(string fixture)
     {
@@ -158,8 +205,9 @@ partial class CraftHarbor
             Require(blocked&&File.ReadAllText(PendingSettingsPath(WorkspaceRoot))=="{broken","damaged draft is not silently overwritten");
             File.Delete(PendingSettingsPath(WorkspaceRoot));CheckDistancePolicy();
             ui.CheckStartupCancellation(Path.GetFullPath(args[2]));
+            CheckJavaProbeDiagnostics(Path.GetFullPath(args[2]));
             ui.HostCall(new HostRequest{Action="shutdown-idle"});
-            File.WriteAllText(report,"PASS: runtime settings/profile save without restart or active-port change; durable next-start draft; UI reopening; occupied-port rejection; shutdown rewrite preservation; atomic next-start apply and backup; unrelated properties preserved; per-profile isolation; whitelist add/remove/UUID validation/deduplication/corrupt-file protection; manual and five-tier distance policies and running heap preview; all-stop during held successful/failed Java preflight, repeated stop/start, fresh retry, graceful stop and intentional restart. Synthetic processes only; no Minecraft server, real account lookup, external tunnel or PC restart.");
+            File.WriteAllText(report,"PASS: runtime settings/profile save without restart or active-port change; durable next-start draft; UI reopening; occupied-port rejection; shutdown rewrite preservation; atomic next-start apply and backup; unrelated properties preserved; per-profile isolation; whitelist add/remove/UUID validation/deduplication/corrupt-file protection; manual and five-tier distance policies and running heap preview; all-stop during held successful/failed Java preflight, repeated stop/start, fresh retry, graceful stop and intentional restart; sanitized Java probe phase/exit/stream diagnostics for success, nonzero exit, start failure and unchanged eight-second timeout. Synthetic processes only; no Minecraft server, real account lookup, external tunnel or PC restart.");
             return 0;
         }catch(Exception error){File.WriteAllText(report,"FAIL: "+error);return 1;}
         finally {
