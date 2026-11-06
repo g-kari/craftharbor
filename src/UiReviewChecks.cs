@@ -73,6 +73,21 @@ partial class CraftHarbor
             AppendLogRecords(new[]{"[MC] Synthetic record after character trim"});
             RequireLogView(new[]{"[MC] Synthetic character trim trigger","[MC] Synthetic record after character trim"},2,"append after character trimming");
             Require(log.TextLength<=500000,"append after character trimming stays within limit");
+
+            logRecords.Clear();RebuildLogView();
+            var beforeDoubleLimit=Enumerable.Range(0,4000).Select(i=>"[MC] Synthetic short line "+i).ToArray();
+            for(int batch=0;batch<10;batch++)AppendLogRecords(beforeDoubleLimit.Skip(batch*400).Take(400));
+            RequireLogView(beforeDoubleLimit,4000,"short records fill the record cap before the double limit");
+            var overlappingLimits=Enumerable.Range(0,400).Select(i=>"[MC] Synthetic double limit "+i.ToString("D4")+" "+new string('x',2000)).ToArray();
+            AppendLogRecords(overlappingLimits);
+            Require(log.TextLength<=500000,"one tick-sized incoming batch enforces both record and character limits");
+            Require(logRecords.Count<=4000,"double limit batch preserves the record cap");
+            var expectedDoubleLimit=overlappingLimits.Skip(200).ToArray();
+            RequireLogView(expectedDoubleLimit,200,"double limit trim retains the newest 200 records without duplicate append");
+            AppendLogRecords(new[]{"[MC] Synthetic after double limit"});
+            RequireLogView(expectedDoubleLimit.Concat(new[]{"[MC] Synthetic after double limit"}).ToArray(),201,"append after simultaneous record and character trimming");
+            Require(log.TextLength<=500000,"following append stays within the character limit");
+
         }finally{
             logRecords.Clear();logRecords.AddRange(savedRecords);logSourceFilter.SelectedIndex=savedFilter;RebuildLogView();log.Text=savedText;log.Select(savedStart,savedLength);
             recentLogs.Text=savedRecent;FitRecentLogScroll();recentLogs.Select(savedRecentStart,savedRecentLength);
