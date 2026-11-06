@@ -13,6 +13,7 @@ partial class CraftHarbor
     }
     void CheckReviewScreens()
     {
+        CheckLogSearch();
         CheckLogRecordBoundaries();
         CheckParticipantSelectionRefresh();
         foreach(var c in Descendants(this).Where(c=>c is TextBox||c is Button||c is Label||c is ComboBox||c is CheckBox))Require(c.Font.SizeInPoints>=12,"UI text is at least 12pt before enlargement");
@@ -23,6 +24,23 @@ partial class CraftHarbor
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
         File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+    }
+    void CheckLogSearch()
+    {
+        string savedText=log.Text,savedQuery=searchText.Text;int savedStart=log.SelectionStart,savedLength=log.SelectionLength,savedPage=workspace.SelectedIndex;
+        Control savedFocus=Descendants(this).FirstOrDefault(control=>control.Focused);
+        try{
+            workspace.SelectedIndex=1;log.Text="[MC] Alpha first"+Environment.NewLine+"[MC] alpha second"+Environment.NewLine;
+            log.Select(5,5);searchText.Text="";searchText.Focus();Application.DoEvents();
+            var search=Descendants(workspace.TabPages[1]).OfType<Button>().Single(button=>button.Text=="ログ内を検索");
+            Require(search.Visible&&search.Enabled,"log search button is available on the visible console");
+            search.PerformClick();Application.DoEvents();
+            Require(log.SelectedText=="Alpha"&&searchText.Focused,"empty log search preserves the existing selection and keeps input focus");
+        }finally{
+            log.Text=savedText;searchText.Text=savedQuery;log.Select(savedStart,savedLength);workspace.SelectedIndex=savedPage;
+            if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
+        }
+        Require(log.Text==savedText&&searchText.Text==savedQuery&&log.SelectionStart==savedStart&&log.SelectionLength==savedLength,"log search checks restore the original text, query and selection");
     }
     void RequireParticipantSelection(string name,int column,string context)
     {
