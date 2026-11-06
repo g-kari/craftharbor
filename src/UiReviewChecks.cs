@@ -25,6 +25,7 @@ partial class CraftHarbor
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
         File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
     }
+    string LogSearchState(){return " selection="+log.SelectionStart+":"+log.SelectionLength+" selected="+log.SelectedText+" inputFocused="+searchText.Focused+" inputCanFocus="+searchText.CanFocus+" logFocused="+log.Focused+" active="+(ActiveControl==null?"null":ActiveControl.GetType().Name);}
     void CheckLogSearchLayout()
     {
         Application.DoEvents();var header=(TableLayoutPanel)logSearchResult.Parent;var searches=(FlowLayoutPanel)header.Controls[1];
@@ -49,7 +50,8 @@ partial class CraftHarbor
             var search=Descendants(workspace.TabPages[1]).OfType<Button>().Single(button=>button.Text=="ログ内を検索");
             Require(search.Visible&&search.Enabled,"log search button is available on the visible console");
             search.PerformClick();Application.DoEvents();
-            Require(log.SelectedText=="Alpha"&&searchText.Focused,"empty log search preserves the existing selection and keeps input focus");
+            Require(log.SelectedText=="Alpha","empty log search preserves the existing selection;"+LogSearchState());
+            Require(searchText.Focused,"empty log search keeps input focus;"+LogSearchState());
             Require(logSearchResult.Text=="検索語を入力してください。","empty search explains the required input");
             searchText.Text="missing";Require(logSearchResult.Text=="","editing the query clears the previous result");search.PerformClick();Application.DoEvents();
             Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="表示中のログに見つかりません。","unsuccessful search explains no match without losing selection or input focus");
