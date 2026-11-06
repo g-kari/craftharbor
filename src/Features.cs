@@ -155,10 +155,18 @@ partial class CraftHarbor
     void ExportLog(){using(var d=new SaveFileDialog{Filter="Text|*.txt",FileName="craftharbor-log-"+DateTime.Now.ToString("yyyyMMdd-HHmm")+".txt"}){if(d.ShowDialog()!=DialogResult.OK)return;File.WriteAllText(d.FileName,Regex.Replace(log.Text,@"https://playit\.gg/claim/\w+","[claim URL hidden]"),new UTF8Encoding(true));}}
     void RefreshUsers()
     {
-        if(usersGrid==null)return;var users=new SortedDictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
+        if(usersGrid==null)return;
+        string selectedName=usersGrid.SelectedRows.Count==0?null:Convert.ToString(usersGrid.SelectedRows[0].Cells[0].Value);
+        int selectedColumn=usersGrid.CurrentCell==null?0:usersGrid.CurrentCell.ColumnIndex;
+        var users=new SortedDictionary<string,string[]>(StringComparer.OrdinalIgnoreCase);
         foreach(string n in onlineNames.Split(new[]{','},StringSplitOptions.RemoveEmptyEntries)){string name=n.Trim();users[name]=new[]{name,"●","","",""};}
         string[] files={"whitelist.json","ops.json","banned-players.json"};for(int i=0;i<files.Length;i++){string path=Path.Combine(ServerDir,files[i]);if(!File.Exists(path))continue;try{var arr=new JavaScriptSerializer().Deserialize<List<Dictionary<string,object>>>(File.ReadAllText(path));foreach(var row in arr){object obj;if(!row.TryGetValue("name",out obj)||obj==null)continue;string name=obj.ToString();if(!users.ContainsKey(name))users[name]=new[]{name,"","","",""};users[name][i+2]="●";}}catch(Exception){}}
         usersGrid.Rows.Clear();foreach(var u in users.Values)usersGrid.Rows.Add(u);
+        usersGrid.CurrentCell=null;usersGrid.ClearSelection();
+        if(selectedName==null)return;
+        foreach(DataGridViewRow row in usersGrid.Rows)if(string.Equals(Convert.ToString(row.Cells[0].Value),selectedName,StringComparison.OrdinalIgnoreCase)){
+            usersGrid.CurrentCell=row.Cells[Math.Max(0,Math.Min(selectedColumn,row.Cells.Count-1))];row.Selected=true;break;
+        }
     }
     void PlayerAction(string action,bool confirm)
     {

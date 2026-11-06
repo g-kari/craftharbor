@@ -14,6 +14,7 @@ partial class CraftHarbor
     void CheckReviewScreens()
     {
         CheckLogRecordBoundaries();
+        CheckParticipantSelectionRefresh();
         foreach(var c in Descendants(this).Where(c=>c is TextBox||c is Button||c is Label||c is ComboBox||c is CheckBox))Require(c.Font.SizeInPoints>=12,"UI text is at least 12pt before enlargement");
         previewJavaPath=JavaPath();javaProbeError="Synthetic Java check error";RefreshJavaPreview();RefreshJavaPreview();Require(javaPreview.Text.Contains("Synthetic Java check error"),"Java probe failure survives preview refresh");javaProbeError="";RefreshJavaPreview();
         largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();Size=new Size(1024,720);
@@ -21,7 +22,77 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+    }
+    void RequireParticipantSelection(string name,int column,string context)
+    {
+        Require(usersGrid.SelectedRows.Count==1&&Convert.ToString(usersGrid.SelectedRows[0].Cells[0].Value)==name,context+": selected participant identity");
+        Require(usersGrid.CurrentCell!=null&&Convert.ToString(usersGrid.CurrentCell.OwningRow.Cells[0].Value)==name&&usersGrid.CurrentCell.ColumnIndex==column,context+": current cell stays with the selected participant");
+    }
+    void CheckParticipantSelectionRefresh()
+    {
+        Require(ManagerDataOverride!=null&&!timer.Enabled&&!Running(server)&&!Running(tunnel),"participant selection checks use a stopped synthetic fixture");
+        foreach(string file in new[]{"whitelist.json","ops.json","banned-players.json"})Require(File.ReadAllText(Path.Combine(ServerDir,file)).Trim()=="[]","participant selection checks require empty synthetic player files");
+        string savedOnlineNames=onlineNames;int savedPage=workspace.SelectedIndex;
+        string savedSelected=usersGrid.SelectedRows.Count==0?null:Convert.ToString(usersGrid.SelectedRows[0].Cells[0].Value);
+        string savedCurrent=usersGrid.CurrentCell==null?null:Convert.ToString(usersGrid.CurrentCell.OwningRow.Cells[0].Value);
+        int savedColumn=usersGrid.CurrentCell==null?0:usersGrid.CurrentCell.ColumnIndex,savedScroll=usersGrid.FirstDisplayedScrollingRowIndex;
+        var savedRows=usersGrid.Rows.Cast<DataGridViewRow>().Select(row=>row.Cells.Cast<DataGridViewCell>().Select(cell=>Convert.ToString(cell.Value)).ToArray()).ToArray();
+        Control savedFocus=Descendants(this).FirstOrDefault(control=>control.Focused);
+        try{
+            workspace.SelectedIndex=2;onlineNames="Alice, Bob, Carol";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.Rows.Cast<DataGridViewRow>().Select(row=>Convert.ToString(row.Cells[0].Value)).SequenceEqual(new[]{"Alice","Bob","Carol"}),"participant selection fixture contains only synthetic names");
+            var bob=usersGrid.Rows.Cast<DataGridViewRow>().Single(row=>Convert.ToString(row.Cells[0].Value)=="Bob");
+            usersGrid.CurrentCell=bob.Cells[3];usersGrid.ClearSelection();bob.Selected=true;usersGrid.Focus();Application.DoEvents();
+            RequireParticipantSelection("Bob",3,"non-first participant fixture selection");
+
+            // The same production method runs on the normal 15-second refresh path.
+            RefreshUsers();Application.DoEvents();
+            RequireParticipantSelection("Bob",3,"automatic participant refresh retains non-first selection");
+            var refresh=Descendants(workspace.TabPages[2]).OfType<Button>().Single(button=>button.Text=="一覧更新");
+            Require(refresh.Visible&&refresh.Enabled,"participant refresh button is available on the visible page");
+            // SendQuiet returns without host IPC because this fixture has no server.
+            refresh.PerformClick();Application.DoEvents();
+            RequireParticipantSelection("Bob",3,"visible participant refresh button retains selection");
+
+            onlineNames="Carol, Aaron, Bob, Alice";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.Rows.Cast<DataGridViewRow>().Select(row=>Convert.ToString(row.Cells[0].Value)).SequenceEqual(new[]{"Aaron","Alice","Bob","Carol"}),"participant refresh inserts an earlier name and sorts the reordered input");
+            RequireParticipantSelection("Bob",3,"participant selection follows identity after row positions change");
+            onlineNames="CAROL, bOB, Aaron, Alice";RefreshUsers();Application.DoEvents();
+            RequireParticipantSelection("bOB",3,"participant selection accepts a case-only name change");
+            CaptureGenericCheck(this,"ui-users-selection.png",2);
+
+            onlineNames="Carol, Aaron, Alice";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.Rows.Count==3&&usersGrid.SelectedRows.Count==0&&usersGrid.CurrentCell==null,"removed participant does not select a different person");
+            RefreshUsers();Application.DoEvents();
+            Require(usersGrid.SelectedRows.Count==0&&usersGrid.CurrentCell==null,"repeated refresh after participant removal remains unselected");
+            onlineNames="Alice, Bob, Carol";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.SelectedRows.Count==0,"a returning participant is not automatically reselected");
+
+            usersGrid.CurrentCell=usersGrid.Rows[1].Cells[2];usersGrid.ClearSelection();
+            Require(usersGrid.SelectedRows.Count==0&&usersGrid.CurrentCell!=null,"unselected fixture can retain a keyboard current cell");
+            RefreshUsers();Application.DoEvents();
+            Require(usersGrid.SelectedRows.Count==0,"refresh does not turn an unselected current cell into a participant selection");
+            bob=usersGrid.Rows.Cast<DataGridViewRow>().Single(row=>Convert.ToString(row.Cells[0].Value)=="Bob");
+            usersGrid.CurrentCell=bob.Cells[0];usersGrid.ClearSelection();bob.Selected=true;
+            onlineNames="";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.Rows.Count==0&&usersGrid.SelectedRows.Count==0&&usersGrid.CurrentCell==null,"empty participant refresh clears selection and current cell");
+            onlineNames="Alice, Bob";RefreshUsers();Application.DoEvents();
+            Require(usersGrid.Rows.Count==2&&usersGrid.SelectedRows.Count==0,"first populated refresh without a selected participant remains unselected");
+        }finally{
+            onlineNames=savedOnlineNames;RefreshUsers();usersGrid.CurrentCell=null;usersGrid.ClearSelection();
+            var current=usersGrid.Rows.Cast<DataGridViewRow>().FirstOrDefault(row=>Convert.ToString(row.Cells[0].Value)==savedCurrent);
+            if(current!=null)usersGrid.CurrentCell=current.Cells[savedColumn];
+            usersGrid.ClearSelection();
+            var selected=usersGrid.Rows.Cast<DataGridViewRow>().FirstOrDefault(row=>Convert.ToString(row.Cells[0].Value)==savedSelected);
+            if(selected!=null)selected.Selected=true;
+            if(savedScroll>=0&&savedScroll<usersGrid.Rows.Count)usersGrid.FirstDisplayedScrollingRowIndex=savedScroll;
+            workspace.SelectedIndex=savedPage;if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
+        }
+        Require(onlineNames==savedOnlineNames&&workspace.SelectedIndex==savedPage,"participant selection checks restore the online names and page");
+        Require(usersGrid.Rows.Count==savedRows.Length&&usersGrid.Rows.Cast<DataGridViewRow>().Select((row,index)=>row.Cells.Cast<DataGridViewCell>().Select(cell=>Convert.ToString(cell.Value)).SequenceEqual(savedRows[index])).All(equal=>equal),"participant selection checks restore the screenshot rows");
+        Require((usersGrid.SelectedRows.Count==0?null:Convert.ToString(usersGrid.SelectedRows[0].Cells[0].Value))==savedSelected,"participant selection checks restore the original selection");
+        Require((usersGrid.CurrentCell==null?null:Convert.ToString(usersGrid.CurrentCell.OwningRow.Cells[0].Value))==savedCurrent&&(savedCurrent==null||usersGrid.CurrentCell.ColumnIndex==savedColumn),"participant selection checks restore the original current cell");
     }
     void RequireLogView(string[] expected,int total,string context)
     {
