@@ -23,24 +23,67 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+    }
+    void CheckLogSearchLayout()
+    {
+        Application.DoEvents();var header=(TableLayoutPanel)logSearchResult.Parent;var searches=(FlowLayoutPanel)header.Controls[1];
+        Require(logSearchResult.Bottom<=header.ClientSize.Height&&logSearchResult.Height>=logSearchResult.Font.Height,"log search feedback fits its allocated header row");
+        foreach(Control control in searches.Controls)Require(control.Left>=0&&control.Top>=0&&control.Right<=searches.ClientSize.Width&&control.Bottom<=searches.ClientSize.Height,"console search controls remain fully inside their actions row: "+LayoutTrace(control));
+        Require(searches.Bottom<=logSearchResult.Top,"search feedback does not overlap search actions");
     }
     void CheckLogSearch()
     {
-        string savedText=log.Text,savedQuery=searchText.Text;int savedStart=log.SelectionStart,savedLength=log.SelectionLength,savedPage=workspace.SelectedIndex;
+        Require(ManagerDataOverride!=null&&!timer.Enabled&&!Running(server)&&!Running(tunnel),"log search checks use a stopped synthetic fixture");
+        var savedRecords=logRecords.ToArray();string savedText=log.Text,savedQuery=searchText.Text,savedResult=logSearchResult.Text;
+        int savedStart=log.SelectionStart,savedLength=log.SelectionLength,savedPage=workspace.SelectedIndex,savedFilter=logSourceFilter.SelectedIndex;
+        string savedRecent=recentLogs.Text;int savedRecentStart=recentLogs.SelectionStart,savedRecentLength=recentLogs.SelectionLength;
+        string preference=Path.Combine(root,"manager-log-filter.txt");byte[] savedPreference=File.Exists(preference)?File.ReadAllBytes(preference):null;
         Control savedFocus=Descendants(this).FirstOrDefault(control=>control.Focused);
+        bool savedLarge=largeText.Checked,savedContrast=highContrast.Checked;Size savedSize=Size;
         try{
-            workspace.SelectedIndex=1;log.Text="[MC] Alpha first"+Environment.NewLine+"[MC] alpha second"+Environment.NewLine;
+            largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();Size=new Size(1024,720);
+            workspace.SelectedIndex=1;logRecords.Clear();logSourceFilter.SelectedIndex=0;RebuildLogView();
+            AppendLogRecords(new[]{"[MC] Alpha first","[公開] Synthetic tunnel","[MC] alpha second"});
             log.Select(5,5);searchText.Text="";searchText.Focus();Application.DoEvents();
             var search=Descendants(workspace.TabPages[1]).OfType<Button>().Single(button=>button.Text=="ログ内を検索");
             Require(search.Visible&&search.Enabled,"log search button is available on the visible console");
             search.PerformClick();Application.DoEvents();
             Require(log.SelectedText=="Alpha"&&searchText.Focused,"empty log search preserves the existing selection and keeps input focus");
+            Require(logSearchResult.Text=="検索語を入力してください。","empty search explains the required input");
+            searchText.Text="missing";Require(logSearchResult.Text=="","editing the query clears the previous result");search.PerformClick();Application.DoEvents();
+            Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="表示中のログに見つかりません。","unsuccessful search explains no match without losing selection or input focus");
+            CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-search-missing.png",1);
+
+            searchText.Text="alpha";log.Select(0,0);search.PerformClick();Application.DoEvents();
+            Require(log.SelectionStart==5&&log.SelectedText=="Alpha"&&log.Focused&&logSearchResult.Text=="一致する箇所を選択しました。","search selects the first literal case-insensitive match");
+            int second=log.Text.IndexOf("alpha second",StringComparison.Ordinal);search.PerformClick();Application.DoEvents();
+            Require(log.SelectionStart==second&&log.SelectedText=="alpha","repeated search advances to the next match");
+            search.PerformClick();Application.DoEvents();
+            Require(log.SelectionStart==5&&log.SelectedText=="Alpha"&&logSearchResult.Text=="先頭に戻り、一致する箇所を選択しました。","search wraps to the first match and explains the wrap");
+            CaptureGenericCheck(this,"ui-log-search-wrapped.png",1);
+
+            logSourceFilter.SelectedIndex=1;Require(logSearchResult.Text=="","changing displayed log sources clears the previous result");
+            log.Select(5,5);searchText.Text="tunnel";search.PerformClick();Application.DoEvents();
+            Require(log.SelectedText=="Alpha"&&logSearchResult.Text=="表示中のログに見つかりません。","search does not find a hidden source record");
+            searchText.Text="alpha";log.Select(0,0);searchText.Focus();var enter=new KeyEventArgs(Keys.Enter);
+            typeof(Control).GetMethod("OnKeyDown",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(searchText,new object[]{enter});Application.DoEvents();
+            Require(enter.Handled&&enter.SuppressKeyPress&&log.SelectionStart==5&&log.SelectedText=="Alpha"&&log.Focused,"Enter from the search field invokes the same search and suppresses the input key");
+            AppendLogRecords(new[]{"[MC] Synthetic appended record"});Require(logSearchResult.Text=="","a displayed log append clears the previous result");
+            searchText.Text="[MC]";log.Select(0,0);search.PerformClick();Require(log.SelectedText=="[MC]","search terms are literal, including punctuation");
+            logRecords.Clear();RebuildLogView();search.PerformClick();Require(log.Text==""&&logSearchResult.Text=="表示中のログに見つかりません。","an empty displayed log reports no match");
+            largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();searchText.Text="";search.PerformClick();Application.DoEvents();
+            Require(logSearchResult.Visible&&logSearchResult.Height>=logSearchResult.Font.Height&&logSearchResult.ForeColor==Color.White,"search feedback remains visible with enlarged high-contrast text");
+            CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-search-accessible.png",1);
         }finally{
-            log.Text=savedText;searchText.Text=savedQuery;log.Select(savedStart,savedLength);workspace.SelectedIndex=savedPage;
-            if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
+            largeText.Checked=savedLarge;highContrast.Checked=savedContrast;ApplyAccessibleTheme();Size=savedSize;
+            logRecords.Clear();logRecords.AddRange(savedRecords);logSourceFilter.SelectedIndex=savedFilter;RebuildLogView();
+            log.Text=savedText;searchText.Text=savedQuery;log.Select(savedStart,savedLength);logSearchResult.Text=savedResult;
+            recentLogs.Text=savedRecent;FitRecentLogScroll();recentLogs.Select(savedRecentStart,savedRecentLength);
+            if(savedPreference==null)File.Delete(preference);else File.WriteAllBytes(preference,savedPreference);
+            workspace.SelectedIndex=savedPage;if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
         }
-        Require(log.Text==savedText&&searchText.Text==savedQuery&&log.SelectionStart==savedStart&&log.SelectionLength==savedLength,"log search checks restore the original text, query and selection");
+        Require(log.Text==savedText&&logRecords.SequenceEqual(savedRecords)&&searchText.Text==savedQuery&&log.SelectionStart==savedStart&&log.SelectionLength==savedLength&&logSearchResult.Text==savedResult&&logSourceFilter.SelectedIndex==savedFilter,"log search checks restore the original records, query, selection, feedback and source filter");
     }
     void RequireParticipantSelection(string name,int column,string context)
     {

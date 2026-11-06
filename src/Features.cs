@@ -69,9 +69,11 @@ partial class CraftHarbor
         FlowBtn(metricActions,"接続を診断",delegate { ShowConnectionDiagnostics(); });FlowBtn(metricActions,"今すぐ取得",delegate { PollMetrics(); });FlowBtn(metricActions,"CSVを書き出す",delegate { ExportMetrics(); });FlowBtn(metricActions,"診断を表示",delegate { Send("spark health show --memory");tabs.SelectedIndex=1; });
         dash.Controls.Add(metricActions,0,3);
         var consolePage=Page(tabs,"コンソール");
-        var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,142));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+        var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,172));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };searchText=Input(consoleTools,230);
-        FlowBtn(consoleTools,"ログ内を検索",delegate { int pos=log.Text.IndexOf(searchText.Text,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);if(pos<0)pos=log.Text.IndexOf(searchText.Text,StringComparison.OrdinalIgnoreCase);if(pos>=0){log.Select(pos,searchText.Text.Length);log.ScrollToCaret();log.Focus();} });
+        FlowBtn(consoleTools,"ログ内を検索",delegate { FindNextLogMatch(); });
+        searchText.KeyDown+=delegate(object sender,KeyEventArgs e){if(e.KeyCode==Keys.Enter){e.Handled=true;e.SuppressKeyPress=true;FindNextLogMatch();}};
+        searchText.TextChanged+=delegate{ClearLogSearchResult();};log.TextChanged+=delegate{ClearLogSearchResult();};
         FlowBtn(consoleTools,"ログを保存",delegate { ExportLog(); });FlowBtn(consoleTools,"ログフォルダー",delegate { Open(Path.Combine(ServerDir,"logs")); });
         consoleWrap.Controls.Add(LogHeader(consoleTools),0,0);console.Dock=DockStyle.Fill;consoleWrap.Controls.Add(console,0,1);consolePage.Controls.Add(consoleWrap);
         var usersPage=Page(tabs,"参加者・権限");
