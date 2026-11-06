@@ -34,11 +34,40 @@ partial class CraftHarbor
     }
     static string RunJavaProbe(string exe,string arguments)
     {
+        return RunJavaProbe(exe,arguments,null);
+    }
+    static string JavaProbeStreamState(Task<string> read)
+    {
+        if(read==null)return "not-started";
+        if(read.Status==TaskStatus.RanToCompletion)return "completed:"+read.Result.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if(read.IsFaulted)return "faulted";if(read.IsCanceled)return "cancelled";return "pending";
+    }
+    static void ObserveJavaProbe(Action<string> observe,string state,Stopwatch watch,Process process,bool started,bool? waitExited,Task<string> stderr,Task<string> stdout)
+    {
+        if(observe==null)return;
+        string exited=started?"unknown":"not-started",code="unknown";
+        if(started)try{bool ended=process.HasExited;exited=ended?"true":"false";if(ended)code=process.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture);}catch(InvalidOperationException){}catch(System.ComponentModel.Win32Exception){}
+        observe("state="+state+" elapsed_ms="+watch.ElapsedMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)+" started="+(started?"true":"false")+" wait_exited="+(waitExited.HasValue?(waitExited.Value?"true":"false"):"not-waited")+" exited="+exited+" exit_code="+code+" stderr="+JavaProbeStreamState(stderr)+" stdout="+JavaProbeStreamState(stdout));
+    }
+    static string RunJavaProbe(string exe,string arguments,Action<string> observe)
+    {
         using(var process=new Process{StartInfo=new ProcessStartInfo(exe,arguments){UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true,RedirectStandardOutput=true}}){
-            process.Start();var stderr=process.StandardError.ReadToEndAsync();var stdout=process.StandardOutput.ReadToEndAsync();
-            if(!process.WaitForExit(8000)){try{process.Kill();}catch(InvalidOperationException){}throw new InvalidOperationException("Javaの確認がタイムアウトしました。java.exeの指定を確認してください。");}
-            string output=stderr.GetAwaiter().GetResult()+stdout.GetAwaiter().GetResult();
-            if(process.ExitCode!=0)throw new InvalidOperationException("Javaが起動オプションを受け付けませんでした。Javaの指定または手動オプションを確認してください。");return output;
+            Stopwatch watch=observe==null?null:Stopwatch.StartNew();bool started=false;bool? waitExited=null;Task<string> stderr=null,stdout=null;
+            try{
+                ObserveJavaProbe(observe,"start-requested",watch,process,started,waitExited,stderr,stdout);
+                started=process.Start();stderr=process.StandardError.ReadToEndAsync();stdout=process.StandardOutput.ReadToEndAsync();
+                ObserveJavaProbe(observe,"started",watch,process,started,waitExited,stderr,stdout);
+                waitExited=process.WaitForExit(8000);
+                ObserveJavaProbe(observe,waitExited.Value?"wait-exited":"wait-timeout",watch,process,started,waitExited,stderr,stdout);
+                if(!waitExited.Value){
+                    ObserveJavaProbe(observe,"kill-attempt",watch,process,started,waitExited,stderr,stdout);
+                    try{process.Kill();ObserveJavaProbe(observe,"kill-requested",watch,process,started,waitExited,stderr,stdout);}catch(InvalidOperationException){ObserveJavaProbe(observe,"kill-not-running",watch,process,started,waitExited,stderr,stdout);}catch(Exception){ObserveJavaProbe(observe,"kill-failed",watch,process,started,waitExited,stderr,stdout);throw;}
+                    throw new InvalidOperationException("Javaの確認がタイムアウトしました。java.exeの指定を確認してください。");
+                }
+                string output=stderr.GetAwaiter().GetResult()+stdout.GetAwaiter().GetResult();
+                ObserveJavaProbe(observe,"streams-read",watch,process,started,waitExited,stderr,stdout);
+                if(process.ExitCode!=0)throw new InvalidOperationException("Javaが起動オプションを受け付けませんでした。Javaの指定または手動オプションを確認してください。");return output;
+            }finally{ObserveJavaProbe(observe,"final",watch,process,started,waitExited,stderr,stdout);}
         }
     }
     static string ValidateJavaCustom(string text)
@@ -97,9 +126,9 @@ partial class CraftHarbor
     }
     static int CheckInstalledJava(string[] args)
     {
-        if(args.Length!=2)return 2;string report=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"java-verification.txt");try{
-            var runtime=ParseJavaRuntime(RunJavaProbe(args[1],"-XshowSettings:properties -version"));var plan=PlanJava(runtime,16,Environment.ProcessorCount,2,true,true,"");
-            RunJavaProbe(args[1],plan.Tuning+" -Xms32m -Xmx64m -version");File.WriteAllText(report,"PASS: 64bit Java "+runtime.Major+" parsed; selected automatic GC/CPU flags accepted by an isolated low-memory -version process. No Minecraft server was started. Flags: "+plan.Tuning);return 0;
-        }catch(Exception e){File.WriteAllText(report,"FAIL: "+e.Message);return 1;}
+        if(args.Length!=2)return 2;string report=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"java-verification.txt");var trace=new StringBuilder();try{
+            var runtime=ParseJavaRuntime(RunJavaProbe(args[1],"-XshowSettings:properties -version",state=>trace.AppendLine("probe=runtime-properties "+state)));var plan=PlanJava(runtime,16,Environment.ProcessorCount,2,true,true,"");
+            RunJavaProbe(args[1],plan.Tuning+" -Xms32m -Xmx64m -version",state=>trace.AppendLine("probe=planned-flags "+state));File.WriteAllText(report,"PASS: 64bit Java "+runtime.Major+" parsed; selected automatic GC/CPU flags accepted by an isolated low-memory -version process. No Minecraft server was started. Flags: "+plan.Tuning+Environment.NewLine+trace);return 0;
+        }catch(Exception){File.WriteAllText(report,"FAIL: Java runtime option validation failed. Sanitized probe states:"+Environment.NewLine+trace);return 1;}
     }
 }
