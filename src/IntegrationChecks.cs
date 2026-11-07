@@ -17,8 +17,26 @@ partial class CraftHarbor
         try{
             first=new CraftHarbor();first.server=first.LaunchPersistent("server",Path.GetFullPath(args[2]),"",first.ServerDir,4);int pid=first.server.Id;
             DateTime end=DateTime.UtcNow.AddSeconds(10);while(!first.ready&&DateTime.UtcNow<end){Thread.Sleep(100);first.PollPersistentHost(true);}Require(first.ready,"fixture reached ready");first.timer.Stop();first.Dispose();first=null;
-            second=new CraftHarbor();Require(Running(second.server)&&second.server.Id==pid&&second.ready,"same child survives UI disposal and reattachment");second.Send("ping");Thread.Sleep(200);second.PollPersistentHost(true);Require(second.queue.ToArray().Any(l=>l.Contains("HOST_CHECK_PONG")),"console after reconnection");second.SendQuiet("spark tps");DateTime metricsEnd=DateTime.UtcNow.AddSeconds(5);while((double.IsNaN(second.tps)||double.IsNaN(second.mspt))&&DateTime.UtcNow<metricsEnd){Thread.Sleep(100);second.PollPersistentHost(true);}Require(second.tps==20.0&&second.mspt==0.8,"quiet metric command and reply after UI reattachment");second.StopServer();Require(second.server.WaitForExit(5000),"fixture exited");second.PollPersistentHost(true);Require(second.serverExitCode==0,"graceful stop after UI reconnection");second.HostCall(new HostRequest{Action="shutdown-idle"});second.persistentAttached=false;
-            File.WriteAllText(Path.Combine(WorkspaceRoot,"host-verification.txt"),"PASS: isolated fake server retained the same PID while the UI was disposed; a second UI reattached, received logs, sent commands including a simulated spark query, parsed TPS/MSPT and stopped the child gracefully. No Minecraft server, public tunnel or Discord message was used.");return 0;
+            second=new CraftHarbor();second.timer.Stop();Require(Running(second.server)&&second.server.Id==pid&&second.ready,"same child survives UI disposal and reattachment");
+            second.Show();second.workspace.SelectedIndex=1;System.Windows.Forms.Application.DoEvents();
+            second.stopping=true;
+            foreach(bool enter in new[]{false,true}){
+                second.CheckRejectedConsoleDraft("  /ping  ",enter,"stopping");second.CheckRejectedConsoleDraft("  /ping  ",enter,"repeated stopping");
+            }
+            second.PollPersistentHost(true);Require(!second.queue.ToArray().Any(line=>line.Contains("HOST_CHECK_PONG")),"stopping rejection sends no ping to the synthetic host");second.stopping=false;
+            foreach(bool enter in new[]{false,true}){
+                int replies=second.queue.ToArray().Count(line=>line.Contains("HOST_CHECK_PONG")),echoes=second.queue.ToArray().Count(line=>line=="> ping");
+                second.command.Text="  /ping  ";second.SubmitConsoleCommandForCheck(enter);
+                Require(second.command.Text==""&&second.queue.ToArray().Count(line=>line=="> ping")==echoes+1,"accepted console submission clears the draft and echoes one normalized command");
+                DateTime replyDeadline=DateTime.UtcNow.AddSeconds(5);
+                while(second.queue.ToArray().Count(line=>line.Contains("HOST_CHECK_PONG"))==replies&&DateTime.UtcNow<replyDeadline){Thread.Sleep(50);second.PollPersistentHost(true);}
+                Require(second.queue.ToArray().Count(line=>line.Contains("HOST_CHECK_PONG"))==replies+1,"console command reaches the reattached synthetic server once");
+            }
+            string oversized=new string('x',32769);second.command.Text=oversized;int sentBefore=second.queue.ToArray().Count(line=>line.StartsWith("> ",StringComparison.Ordinal));bool rejected=false;
+            try{second.SendCommand();}catch(InvalidOperationException){rejected=true;}
+            Require(rejected&&second.command.Text==oversized&&second.queue.ToArray().Count(line=>line.StartsWith("> ",StringComparison.Ordinal))==sentBefore,"host rejection preserves the draft without a successful echo");
+            second.command.Clear();second.Hide();second.SendQuiet("spark tps");DateTime metricsEnd=DateTime.UtcNow.AddSeconds(5);while((double.IsNaN(second.tps)||double.IsNaN(second.mspt))&&DateTime.UtcNow<metricsEnd){Thread.Sleep(100);second.PollPersistentHost(true);}Require(second.tps==20.0&&second.mspt==0.8,"quiet metric command and reply after UI reattachment");second.command.Text="stop";second.SendCommand();Require(second.command.Text==""&&second.stopping,"explicit console stop retains graceful-stop handling and clears the input");Require(second.server.WaitForExit(5000),"fixture exited");second.PollPersistentHost(true);Require(second.serverExitCode==0,"graceful stop after UI reconnection");second.HostCall(new HostRequest{Action="shutdown-idle"});second.persistentAttached=false;
+            File.WriteAllText(Path.Combine(WorkspaceRoot,"host-verification.txt"),"PASS: isolated fake server retained the same PID while the UI was disposed; a second UI reattached, received logs, preserved rejected console drafts through button and Enter while stopping, cleared only host-accepted commands verified by separate ping replies, preserved a host-rejected oversized draft, sent a simulated spark query, parsed TPS/MSPT and stopped the child gracefully. No Minecraft server, public tunnel or Discord message was used.");return 0;
         }catch(Exception e){File.WriteAllText(Path.Combine(WorkspaceRoot,"host-verification.txt"),"FAIL: "+e);return 1;}
         finally{foreach(var app in new[]{first,second})if(app!=null){try{if(Running(app.server)){app.HostCall(new HostRequest{Action="command",Text="stop"});app.server.WaitForExit(5000);}app.HostCall(new HostRequest{Action="shutdown-idle"});}catch(Exception){}if(app.timer!=null)app.timer.Stop();app.Dispose();}}
     }

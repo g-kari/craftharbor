@@ -200,8 +200,8 @@ partial class CraftHarbor : Form
     void StopServer() { if(preparingServer)cancelServerStart=true;CancelScheduledFromUi();if(!Running(server)||stopping)return;Send("stop");stopping=true;stopAt=DateTime.UtcNow;Add("[管理] ワールドを保存して停止しています。"); }
     void StartTunnel(){StartHosting();}
     void StopTunnel() { if(Running(tunnel)) { HostCall(new HostRequest{Action="stop-tunnel"});Add("[管理] 公開接続を停止しました。"); } }
-    void Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text); }
-    void SendCommand() { string s=command.Text.Trim().TrimStart('/');if(s.Length==0)return;if(s=="stop")StopServer();else Send(s);command.Clear(); }
+    bool Send(string text) { if(!Running(server)||stopping) { Add("[案内] サーバー起動後に操作してください。");return false; }HostCall(new HostRequest{Action="command",Text=text});Add("> "+text);return true; }
+    void SendCommand() { string s=command.Text.Trim().TrimStart('/');if(s.Length==0)return;if(s=="stop")StopServer();else if(!Send(s))return;command.Clear(); }
     void Backup()
     {
         CheckBootPreparation();
