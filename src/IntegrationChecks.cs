@@ -72,7 +72,7 @@ partial class CraftHarbor
         CheckPackLaunchCase(scratch,"ambiguous-argfiles",new[]{first,second},null,null);
         CheckPackLaunchCase(scratch,"reversed-argfiles",new[]{second,first},null,null);
         CheckPackLaunchCase(scratch,"single-argfile",new[]{second},"argfile",second);
-        CheckPackLaunchCase(scratch,"unrelated-argfiles",new[]{second,"libraries/old/unix_args.txt","libraries/old/win_args.txt.bak","libraries/README.txt","run.bat"},"argfile",second);
+        CheckPackLaunchCase(scratch,"unrelated-argfiles",new[]{second,"libraries/old/unix_args.txt","libraries/old/win_args.txt.bak","libraries/README.txt","other/win_args.txt","run.bat"},"argfile",second);
         CheckPackLaunchCase(scratch,"missing-argfile",new[]{"libraries/README.txt","libraries/old/unix_args.txt"},null,null);
         CheckPackLaunchCase(scratch,"server-jar-priority",new[]{"server.jar","fabric-server-launch.jar",first,second},"jar","server.jar");
         CheckPackLaunchCase(scratch,"fabric-jar-priority",new[]{"fabric-server-launch.jar","minecraft-server.jar",first,second},"jar","fabric-server-launch.jar");
