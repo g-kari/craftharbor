@@ -88,7 +88,7 @@ static class Icons
 partial class CraftHarbor
 {
     CheckBox autoMemory,largeText,highContrast;
-    Label heapPreview,heapExplanation,pageHeading;
+    Label heapPreview,heapExplanation,pageHeading,participantGuideResult;
     TextBox participantGuide;
     WorkspaceTabs workspace;
     readonly List<ActionButton> navigation=new List<ActionButton>();
@@ -175,12 +175,26 @@ partial class CraftHarbor
     string GuideText(){return BuildParticipantGuide();}
     void AddParticipantPage()
     {
-        var page=Page(workspace,"参加者向け案内");var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,54));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,56));page.Controls.Add(layout);
+        var page=Page(workspace,"参加者向け案内");var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,54));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,56));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));page.Controls.Add(layout);
         layout.Controls.Add(new Label{Text="Discordにそのまま貼れる案内です。接続先欄の内容を反映して作成します。\n公開アドレスが未設定の間は、差し替え位置が表示されます。",ForeColor=Muted,Dock=DockStyle.Fill},0,0);
         participantGuide=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,BackColor=Card,ForeColor=Ink,Font=new Font("Yu Gothic UI",11),AccessibleName="Discord共有用の参加案内",AccessibleDescription="全選択してコピーできます。下のDiscord用コピーでもコピーできます。"};layout.Controls.Add(participantGuide,0,1);
-        var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,Padding=new Padding(0,8,0,0)};var copy=FlowBtn(actions,"Discord用コピー",delegate{RefreshGuide();Clipboard.SetText(participantGuide.Text);Add("[案内] Discord向けの参加案内をコピーしました。");});copy.Width=180;FlowBtn(actions,"TXTで保存",delegate{RefreshGuide();File.WriteAllText(Path.Combine(root,"Discord参加案内.txt"),participantGuide.Text,new UTF8Encoding(true));Add("[案内] Discord参加案内.txtを保存しました。");});FlowBtn(actions,"接続先を反映",delegate{RefreshGuide();});layout.Controls.Add(actions,0,2);
+        var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,Padding=new Padding(0,8,0,0)};var copy=FlowBtn(actions,"Discord用コピー",delegate{CopyParticipantGuide();});copy.Width=180;FlowBtn(actions,"TXTで保存",delegate{SaveParticipantGuide();});FlowBtn(actions,"接続先を反映",delegate{RefreshParticipantGuide();});layout.Controls.Add(actions,0,2);
+        participantGuideResult=new Label{AutoSize=true,Dock=DockStyle.Fill,ForeColor=Ink,Padding=new Padding(0,8,0,8),AccessibleName="参加案内の操作結果",AccessibleDescription="コピーやTXT保存が完了したかを表示します。"};layout.Controls.Add(participantGuideResult,0,3);
     }
-    void RefreshGuide(){if(participantGuide==null)return;participantGuide.Text=GuideText();File.WriteAllText(Path.Combine(root,"Discord参加案内.txt"),participantGuide.Text,new UTF8Encoding(true));}
+    void RefreshParticipantGuide(){participantGuideResult.Text="";RefreshGuide();}
+    void CopyParticipantGuide()
+    {
+        participantGuideResult.Text="";
+        try{RefreshGuide();Clipboard.SetText(participantGuide.Text);participantGuideResult.Text="参加案内をコピーしました。Discordなどに貼り付けできます。";Add("[案内] Discord向けの参加案内をコピーしました。");}
+        catch{participantGuideResult.Text="コピーできませんでした。エラーを確認して、やり直してください。";throw;}
+    }
+    void SaveParticipantGuide()
+    {
+        participantGuideResult.Text="";string file=Path.Combine(root,"Discord参加案内.txt");
+        try{RefreshGuide();File.WriteAllText(file,participantGuide.Text,new UTF8Encoding(true));participantGuideResult.Text="TXTを保存しました。保存先: "+file;Add("[案内] Discord参加案内.txtを保存しました。");}
+        catch{participantGuideResult.Text="TXTを保存できませんでした。エラーを確認して、やり直してください。";throw;}
+    }
+    void RefreshGuide(){if(participantGuide==null)return;string text=GuideText();if(participantGuide.Text!=text&&participantGuideResult!=null)participantGuideResult.Text="";participantGuide.Text=text;File.WriteAllText(Path.Combine(root,"Discord参加案内.txt"),participantGuide.Text,new UTF8Encoding(true));}
     static void CaptureGenericCheck(CraftHarbor manager,string name,int page)
     {
         manager.workspace.SelectedIndex=page;Application.DoEvents();using(var image=new Bitmap(manager.Width,manager.Height)){manager.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.Combine(manager.root,name),System.Drawing.Imaging.ImageFormat.Png);}

@@ -25,7 +25,7 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant-guide copy and TXT save use the visible buttons, preserve current text and UTF-8 BOM, show the actual save path, clear stale results on changed or explicit refresh, recover on explicit retry, and retain readable enlarged high-contrast feedback; locked-file save/refresh failure states are checked through the same production actions directly, not through the modal dialog; stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
     }
     void CheckParticipantGuideFeedback()
     {
@@ -57,6 +57,9 @@ partial class CraftHarbor
             copy.PerformClick();copy.PerformClick();save.PerformClick();save.PerformClick();Application.DoEvents();
             Require(result.Text.StartsWith("TXTを保存しました。",StringComparison.Ordinal)&&File.ReadAllText(file)==participantGuide.Text,"repeated guide actions confirm the current completed operation");
 
+            refresh.PerformClick();Application.DoEvents();Require(result.Text=="","explicit refresh clears prior success even when guide content is unchanged");
+            save.PerformClick();Application.DoEvents();
+
             // Invoke the same production save action directly to inspect its error state without opening the shared modal dialog.
             // The actual visible save/copy/refresh button paths are exercised above. This failure case is not a modal-dialog UI test.
             var action=typeof(CraftHarbor).GetMethod("SaveParticipantGuide",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
@@ -69,6 +72,13 @@ partial class CraftHarbor
             Require(File.ReadAllBytes(file).SequenceEqual(beforeFailure)&&queue.ToArray().Count(line=>line=="[案内] Discord参加案内.txtを保存しました。")==successes,"failed save leaves existing TXT bytes and success logs unchanged");
             CheckParticipantGuideResultLayout(result);CaptureGenericCheck(this,"ui-guide-save-failure.png",7);
             save.PerformClick();Application.DoEvents();Require(result.Text=="TXTを保存しました。保存先: "+file,"explicit save retry recovers after a locked file is released");
+            var refreshAction=typeof(CraftHarbor).GetMethod("RefreshParticipantGuide",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            Require(refreshAction!=null,"refresh button has its production action for error-state coverage");bool refreshRejected=false;
+            using(var locked=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.None)){
+                try{refreshAction.Invoke(this,null);}catch(System.Reflection.TargetInvocationException e){if(!(e.InnerException is IOException))throw;refreshRejected=true;}
+            }
+            Require(refreshRejected&&result.Text==""&&File.ReadAllBytes(file).SequenceEqual(beforeFailure),"failed same-content explicit refresh clears prior success without changing TXT bytes");
+            save.PerformClick();Application.DoEvents();
             largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();Application.DoEvents();
             Require(result.ForeColor==Color.White&&result.Font.SizeInPoints>=13.9f,"guide feedback follows enlarged high-contrast styling");
             CheckParticipantGuideResultLayout(result);CaptureGenericCheck(this,"ui-guide-result-accessible.png",7);
@@ -84,7 +94,7 @@ partial class CraftHarbor
     void CheckParticipantGuideResultLayout(Label result)
     {
         Application.DoEvents();var layout=(TableLayoutPanel)result.Parent;var actions=(FlowLayoutPanel)layout.GetControlFromPosition(0,2);
-        Require(result.Visible&&result.Height>=result.GetPreferredSize(new Size(result.Width,0)).Height&&result.Bottom<=layout.ClientSize.Height,"guide feedback is fully readable in its allocated row");
+        Require(result.Visible&&result.Left>=0&&result.Right<=layout.ClientSize.Width&&result.Height>=result.GetPreferredSize(new Size(result.Width,0)).Height&&result.Bottom<=layout.ClientSize.Height,"guide feedback is fully readable in its allocated row");
         Require(actions.Bottom<=result.Top&&participantGuide.Parent.Bottom<=actions.Top,"guide text, actions and feedback do not overlap");
         foreach(Control c in actions.Controls)Require(c.Left>=0&&c.Top>=0&&c.Right<=actions.ClientSize.Width&&c.Bottom<=actions.ClientSize.Height,"participant guide action remains inside its row: "+LayoutTrace(c));
     }
