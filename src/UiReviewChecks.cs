@@ -23,7 +23,7 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
     }
     string LogSearchState(){return " selection="+log.SelectionStart+":"+log.SelectionLength+" selected="+log.SelectedText+" inputFocused="+searchText.Focused+" inputCanFocus="+searchText.CanFocus+" inputVisible="+searchText.Visible+" inputEnabled="+searchText.Enabled+" inputHandle="+searchText.IsHandleCreated+" inputDisposed="+searchText.IsDisposed+" parentVisible="+searchText.Parent.Visible+" parentEnabled="+searchText.Parent.Enabled+" parentHandle="+searchText.Parent.IsHandleCreated+" logFocused="+log.Focused+" active="+(ActiveControl==null?"null":ActiveControl.GetType().Name);}
     void CheckLogSearchLayout()
@@ -38,6 +38,7 @@ partial class CraftHarbor
         Require(ManagerDataOverride!=null&&!timer.Enabled&&!Running(server)&&!Running(tunnel),"log search checks use a stopped synthetic fixture");
         var savedRecords=logRecords.ToArray();string savedText=log.Text,savedQuery=searchText.Text,savedResult=logSearchResult.Text;
         int savedStart=log.SelectionStart,savedLength=log.SelectionLength,savedPage=workspace.SelectedIndex,savedFilter=logSourceFilter.SelectedIndex;
+        string savedCommand=command.Text;
         string savedRecent=recentLogs.Text;int savedRecentStart=recentLogs.SelectionStart,savedRecentLength=recentLogs.SelectionLength;
         string preference=Path.Combine(root,"manager-log-filter.txt");byte[] savedPreference=File.Exists(preference)?File.ReadAllBytes(preference):null;
         Control savedFocus=Descendants(this).FirstOrDefault(control=>control.Focused);
@@ -78,15 +79,60 @@ partial class CraftHarbor
             largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();searchText.Text="";search.PerformClick();Application.DoEvents();
             Require(logSearchResult.Visible&&logSearchResult.Height>=logSearchResult.Font.Height&&logSearchResult.ForeColor==Color.White,"search feedback remains visible with enlarged high-contrast text");
             CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-search-accessible.png",1);
+            CheckLogSearchShortcuts();
         }finally{
             largeText.Checked=savedLarge;highContrast.Checked=savedContrast;ApplyAccessibleTheme();Size=savedSize;
             logRecords.Clear();logRecords.AddRange(savedRecords);logSourceFilter.SelectedIndex=savedFilter;RebuildLogView();
-            log.Text=savedText;searchText.Text=savedQuery;log.Select(savedStart,savedLength);logSearchResult.Text=savedResult;
+            log.Text=savedText;searchText.Text=savedQuery;log.Select(savedStart,savedLength);logSearchResult.Text=savedResult;command.Text=savedCommand;
             recentLogs.Text=savedRecent;FitRecentLogScroll();recentLogs.Select(savedRecentStart,savedRecentLength);
             if(savedPreference==null)File.Delete(preference);else File.WriteAllBytes(preference,savedPreference);
             workspace.SelectedIndex=savedPage;if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
         }
         Require(log.Text==savedText&&logRecords.SequenceEqual(savedRecords)&&searchText.Text==savedQuery&&log.SelectionStart==savedStart&&log.SelectionLength==savedLength&&logSearchResult.Text==savedResult&&logSourceFilter.SelectedIndex==savedFilter,"log search checks restore the original records, query, selection, feedback and source filter");
+    }
+    bool InvokeLogSearchShortcut(Control source,Keys keys)
+    {
+        var message=Message.Create(source.Handle,0x100,(IntPtr)(int)(keys&Keys.KeyCode),IntPtr.Zero);
+        var method=typeof(Control).GetMethod("ProcessCmdKey",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+        return (bool)method.Invoke(source,new object[]{message,keys});
+    }
+    void CheckLogSearchShortcuts()
+    {
+        // Exercise WinForms command-key bubbling from child controls with synthetic key data.
+        // This does not inject physical keyboard events or change the system clipboard.
+        largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();
+        workspace.SelectedIndex=1;logRecords.Clear();logSourceFilter.SelectedIndex=0;RebuildLogView();
+        AppendLogRecords(new[]{"[MC] Alpha first","[公開] Synthetic hidden tunnel","[MC] alpha second"});
+        searchText.Text="alpha";log.Select(5,5);command.Text="say Synthetic unsent draft";command.Focus();Application.DoEvents();
+        string text=log.Text;var records=logRecords.ToArray();
+        Require(InvokeLogSearchShortcut(command,Keys.Control|Keys.F),"Ctrl+F from the command input is handled");Application.DoEvents();
+        Require(workspace.SelectedIndex==1&&searchText.Focused&&searchText.SelectedText=="alpha","Ctrl+F focuses and selects the existing search query");
+        Require(log.Text==text&&log.SelectionStart==5&&log.SelectedText=="Alpha"&&logRecords.SequenceEqual(records)&&command.Text=="say Synthetic unsent draft"&&logSourceFilter.SelectedIndex==0,"opening search preserves logs, log selection, the source filter and the unsent command");
+        Require(InvokeLogSearchShortcut(searchText,Keys.Control|Keys.F)&&searchText.SelectedText=="alpha","repeated Ctrl+F keeps the query selected");
+        CaptureGenericCheck(this,"ui-log-shortcut-query.png",1);
+        int second=log.Text.IndexOf("alpha second",StringComparison.Ordinal);
+        Require(InvokeLogSearchShortcut(searchText,Keys.F3),"F3 from the query is handled");Application.DoEvents();
+        Require(log.SelectionStart==second&&log.SelectedText=="alpha"&&log.Focused,"F3 advances from the existing log selection");
+        Require(InvokeLogSearchShortcut(log,Keys.F3),"F3 from the readonly log is handled");Application.DoEvents();
+        Require(log.SelectionStart==5&&log.SelectedText=="Alpha"&&logSearchResult.Text=="先頭に戻り、一致する箇所を選択しました。","F3 wraps through the same search path");
+        foreach(var keys in new[]{Keys.Control|Keys.F3,Keys.Shift|Keys.F3,Keys.Alt|Keys.F,Keys.Control|Keys.Shift|Keys.F}){
+            InvokeLogSearchShortcut(log,keys);Application.DoEvents();
+            Require(workspace.SelectedIndex==1&&log.SelectionStart==5&&log.SelectedText=="Alpha"&&command.Text=="say Synthetic unsent draft","other shortcut modifiers do not search or change the command");
+        }
+        workspace.SelectedIndex=3;motdSetting.Focus();Application.DoEvents();
+        InvokeLogSearchShortcut(motdSetting,Keys.F3);Application.DoEvents();
+        Require(workspace.SelectedIndex==3&&log.SelectionStart==5&&searchText.Text=="alpha","F3 on another page does not navigate or search");
+        Require(InvokeLogSearchShortcut(motdSetting,Keys.Control|Keys.F),"Ctrl+F from settings bubbles to the manager");Application.DoEvents();
+        Require(workspace.SelectedIndex==1&&searchText.Focused&&searchText.SelectedText=="alpha","Ctrl+F opens the console from another page");
+        logSourceFilter.SelectedIndex=1;log.Select(5,5);searchText.Text="tunnel";
+        Require(InvokeLogSearchShortcut(searchText,Keys.F3),"F3 handles a query for a hidden source");Application.DoEvents();
+        Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="表示中のログに見つかりません。","shortcut search respects the displayed source filter");
+        searchText.Text="";Require(InvokeLogSearchShortcut(searchText,Keys.F3),"F3 handles an empty query");Application.DoEvents();
+        Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="検索語を入力してください。","F3 explains an empty query without replacing the log selection");
+        largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();command.Focus();
+        Require(InvokeLogSearchShortcut(command,Keys.Control|Keys.F),"Ctrl+F remains available with enlarged high-contrast text");Application.DoEvents();
+        Require(searchText.Focused&&searchText.ForeColor==Color.White,"shortcut search retains accessible focus and contrast");
+        CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-shortcut-accessible.png",1);
     }
     void RequireParticipantSelection(string name,int column,string context)
     {

@@ -11,6 +11,14 @@ partial class CraftHarbor
     readonly List<string> logRecords=new List<string>();
     ComboBox logSourceFilter;
     Label logCounter,logSearchResult;
+    protected override bool ProcessCmdKey(ref Message message,Keys keyData)
+    {
+        if(workspace!=null&&searchText!=null&&workspace.TabPages.Count>1){
+            if(keyData==(Keys.Control|Keys.F)){workspace.SelectedIndex=1;searchText.Focus();searchText.SelectAll();return true;}
+            if(keyData==Keys.F3&&workspace.SelectedIndex==1){FindNextLogMatch();return true;}
+        }
+        return base.ProcessCmdKey(ref message,keyData);
+    }
     void ClearLogSearchResult(){if(logSearchResult!=null)logSearchResult.Text="";}
     void FindNextLogMatch()
     {
