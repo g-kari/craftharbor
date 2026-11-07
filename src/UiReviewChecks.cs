@@ -94,7 +94,7 @@ partial class CraftHarbor
     void CheckParticipantGuideResultLayout(Label result)
     {
         Application.DoEvents();var layout=(TableLayoutPanel)result.Parent;var actions=(FlowLayoutPanel)layout.GetControlFromPosition(0,2);
-        Require(result.Visible&&result.Left>=0&&result.Right<=layout.ClientSize.Width&&result.Height>=result.GetPreferredSize(new Size(result.Width,0)).Height&&result.Bottom<=layout.ClientSize.Height,"guide feedback is fully readable in its allocated row");
+        Require(result.Visible&&result.Left>=0&&result.Right<=layout.ClientSize.Width&&result.Height>=result.GetPreferredSize(new Size(result.Width,0)).Height&&result.Bottom<=layout.ClientSize.Height,"guide feedback is fully readable in its allocated row: "+LayoutTrace(result)+" preferred="+result.GetPreferredSize(new Size(result.Width,0))+" parent="+layout.ClientSize+" rows="+string.Join(",",layout.RowStyles.Cast<RowStyle>().Select(row=>row.Height.ToString("0.##")).ToArray()));
         Require(actions.Bottom<=result.Top&&participantGuide.Parent.Bottom<=actions.Top,"guide text, actions and feedback do not overlap");
         foreach(Control c in actions.Controls)Require(c.Left>=0&&c.Top>=0&&c.Right<=actions.ClientSize.Width&&c.Bottom<=actions.ClientSize.Height,"participant guide action remains inside its row: "+LayoutTrace(c));
     }
