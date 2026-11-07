@@ -284,4 +284,3 @@ partial class CraftHarbor
         Require(logSourceFilter.ForeColor!=Color.Black||highContrast.Checked,"log filter uses readable foreground");
     }
 }
-
