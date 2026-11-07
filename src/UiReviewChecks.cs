@@ -13,6 +13,7 @@ partial class CraftHarbor
     }
     void CheckReviewScreens()
     {
+        CheckParticipantGuideFeedback();
         CheckStoppedConsoleDrafts();
         CheckLogSearch();
         CheckLogRecordBoundaries();
@@ -24,7 +25,78 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant-guide copy and TXT save use the visible buttons, preserve current text and UTF-8 BOM, show the actual save path, clear stale results on changed or explicit refresh, recover on explicit retry, and retain readable enlarged high-contrast feedback; locked-file save/refresh failure states are checked through the same production actions directly, not through the modal dialog; stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+    }
+    void CheckParticipantGuideFeedback()
+    {
+        Require(ManagerDataOverride!=null&&!timer.Enabled&&!Running(server)&&!Running(tunnel),"participant guide feedback checks use a stopped synthetic workspace");
+        var page=workspace.TabPages[7];
+        var result=Descendants(page).OfType<Label>().SingleOrDefault(c=>c.AccessibleName=="参加案内の操作結果");
+        Require(result!=null,"participant guide copy and TXT save have same-page result feedback");
+        int savedPage=workspace.SelectedIndex;Size savedSize=Size;bool savedLarge=largeText.Checked,savedContrast=highContrast.Checked;
+        string savedAddress=address.Text,savedGuide=participantGuide.Text,savedResult=result.Text;
+        string file=Path.Combine(root,"Discord参加案内.txt"),preference=Path.Combine(root,"manager-log-filter.txt");
+        byte[] savedBytes=File.ReadAllBytes(file),savedPreference=File.Exists(preference)?File.ReadAllBytes(preference):null;
+        var savedQueue=queue.ToArray();Control savedFocus=Descendants(this).FirstOrDefault(c=>c.Focused);
+        try{
+            largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();Size=new Size(1024,720);workspace.SelectedIndex=7;Application.DoEvents();
+            var copy=Descendants(page).OfType<Button>().Single(c=>c.Text=="Discord用コピー");
+            var save=Descendants(page).OfType<Button>().Single(c=>c.Text=="TXTで保存");
+            var refresh=Descendants(page).OfType<Button>().Single(c=>c.Text=="接続先を反映");
+            Require(copy.Visible&&copy.Enabled&&save.Visible&&save.Enabled,"participant guide actions are available on the visible page");
+            address.Text="synthetic.example.invalid:25567";copy.PerformClick();Application.DoEvents();
+            Require(Clipboard.GetText()==participantGuide.Text&&participantGuide.Text==GuideText(),"copy button copies the current synthetic guide exactly");
+            Require(result.Visible&&result.Text=="参加案内をコピーしました。Discordなどに貼り付けできます。","copy success is visible beside the actions");
+            CaptureGenericCheck(this,"ui-guide-copy-result.png",7);
+            save.PerformClick();Application.DoEvents();
+            Require(File.ReadAllText(file)==participantGuide.Text&&File.ReadAllBytes(file).Take(3).SequenceEqual(new byte[]{239,187,191}),"TXT button preserves the current complete guide and existing UTF-8 BOM encoding");
+            Require(result.Text=="TXTを保存しました。保存先: "+file,"TXT success identifies the existing actual destination");
+            CheckParticipantGuideResultLayout(result);CaptureGenericCheck(this,"ui-guide-save-result.png",7);
+            address.Text="updated.example.invalid:25568";refresh.PerformClick();Application.DoEvents();
+            Require(result.Text==""&&participantGuide.Text==GuideText()&&File.ReadAllText(file)==participantGuide.Text,"refreshing changed guide content clears stale success and retains automatic TXT export");
+            copy.PerformClick();copy.PerformClick();save.PerformClick();save.PerformClick();Application.DoEvents();
+            Require(result.Text.StartsWith("TXTを保存しました。",StringComparison.Ordinal)&&File.ReadAllText(file)==participantGuide.Text,"repeated guide actions confirm the current completed operation");
+
+            refresh.PerformClick();Application.DoEvents();Require(result.Text=="","explicit refresh clears prior success even when guide content is unchanged");
+            save.PerformClick();Application.DoEvents();
+
+            // Invoke the same production save action directly to inspect its error state without opening the shared modal dialog.
+            // The actual visible save/copy/refresh button paths are exercised above. This failure case is not a modal-dialog UI test.
+            var action=typeof(CraftHarbor).GetMethod("SaveParticipantGuide",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            Require(action!=null,"TXT button has a production save action for failure coverage");
+            byte[] beforeFailure=File.ReadAllBytes(file);int successes=queue.ToArray().Count(line=>line=="[案内] Discord参加案内.txtを保存しました。");bool rejected=false;
+            using(var locked=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.None)){
+                try{action.Invoke(this,null);}catch(System.Reflection.TargetInvocationException e){if(!(e.InnerException is IOException))throw;rejected=true;}
+            }
+            Require(rejected&&result.Text=="TXTを保存できませんでした。エラーを確認して、やり直してください。","failed save replaces prior success before shared error handling");
+            Require(File.ReadAllBytes(file).SequenceEqual(beforeFailure)&&queue.ToArray().Count(line=>line=="[案内] Discord参加案内.txtを保存しました。")==successes,"failed save leaves existing TXT bytes and success logs unchanged");
+            CheckParticipantGuideResultLayout(result);CaptureGenericCheck(this,"ui-guide-save-failure.png",7);
+            save.PerformClick();Application.DoEvents();Require(result.Text=="TXTを保存しました。保存先: "+file,"explicit save retry recovers after a locked file is released");
+            var refreshAction=typeof(CraftHarbor).GetMethod("RefreshParticipantGuide",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            Require(refreshAction!=null,"refresh button has its production action for error-state coverage");bool refreshRejected=false;
+            using(var locked=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.None)){
+                try{refreshAction.Invoke(this,null);}catch(System.Reflection.TargetInvocationException e){if(!(e.InnerException is IOException))throw;refreshRejected=true;}
+            }
+            Require(refreshRejected&&result.Text==""&&File.ReadAllBytes(file).SequenceEqual(beforeFailure),"failed same-content explicit refresh clears prior success without changing TXT bytes");
+            save.PerformClick();Application.DoEvents();
+            largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();Application.DoEvents();
+            Require(result.ForeColor==Color.White&&result.Font.SizeInPoints>=13.9f,"guide feedback follows enlarged high-contrast styling");
+            CheckParticipantGuideResultLayout(result);CaptureGenericCheck(this,"ui-guide-result-accessible.png",7);
+        }finally{
+            Clipboard.Clear();address.Text=savedAddress;participantGuide.Text=savedGuide;result.Text=savedResult;File.WriteAllBytes(file,savedBytes);
+            string discarded;while(queue.TryDequeue(out discarded)){}foreach(string line in savedQueue)queue.Enqueue(line);
+            largeText.Checked=savedLarge;highContrast.Checked=savedContrast;ApplyAccessibleTheme();Size=savedSize;
+            if(savedPreference==null)File.Delete(preference);else File.WriteAllBytes(preference,savedPreference);
+            workspace.SelectedIndex=savedPage;if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
+        }
+        Require(address.Text==savedAddress&&participantGuide.Text==savedGuide&&result.Text==savedResult&&File.ReadAllBytes(file).SequenceEqual(savedBytes)&&queue.ToArray().SequenceEqual(savedQueue),"guide feedback checks restore guide, address, export and log fixtures");
+    }
+    void CheckParticipantGuideResultLayout(Label result)
+    {
+        Application.DoEvents();var layout=(TableLayoutPanel)result.Parent;var actions=(FlowLayoutPanel)layout.GetControlFromPosition(0,2);
+        Require(result.Visible&&result.Left>=0&&result.Right<=layout.ClientSize.Width&&result.Height>=result.GetPreferredSize(new Size(result.Width,0)).Height&&result.Bottom<=layout.ClientSize.Height,"guide feedback is fully readable in its allocated row: "+LayoutTrace(result)+" preferred="+result.GetPreferredSize(new Size(result.Width,0))+" parent="+layout.ClientSize+" rows="+string.Join(",",layout.RowStyles.Cast<RowStyle>().Select(row=>row.Height.ToString("0.##")).ToArray()));
+        Require(actions.Bottom<=result.Top&&participantGuide.Parent.Bottom<=actions.Top,"guide text, actions and feedback do not overlap");
+        foreach(Control c in actions.Controls)Require(c.Left>=0&&c.Top>=0&&c.Right<=actions.ClientSize.Width&&c.Bottom<=actions.ClientSize.Height,"participant guide action remains inside its row: "+LayoutTrace(c));
     }
     void SubmitConsoleCommandForCheck(bool enter)
     {
