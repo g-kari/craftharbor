@@ -40,6 +40,44 @@ partial class CraftHarbor
         }catch(Exception e){File.WriteAllText(Path.Combine(WorkspaceRoot,"host-verification.txt"),"FAIL: "+e);return 1;}
         finally{foreach(var app in new[]{first,second})if(app!=null){try{if(Running(app.server)){app.HostCall(new HostRequest{Action="command",Text="stop"});app.server.WaitForExit(5000);}app.HostCall(new HostRequest{Action="shutdown-idle"});}catch(Exception){}if(app.timer!=null)app.timer.Stop();app.Dispose();}}
     }
+    static void CheckPackLaunchCase(string scratch,string scenario,string[] members,string expectedMode,string expectedTarget)
+    {
+        string fixture=Path.Combine(scratch,"launch-"+scenario);Directory.CreateDirectory(fixture);
+        string archivePath=Path.Combine(fixture,"pack.zip"),unpacked=Path.Combine(fixture,"unpacked"),workspace=Path.Combine(fixture,"workspace");
+        using(var archive=ZipFile.Open(archivePath,ZipArchiveMode.Create))foreach(string member in members)
+            using(var writer=new StreamWriter(archive.CreateEntry("pack/"+member).Open()))writer.Write("synthetic launch fixture; never executed");
+        string archiveHash=Sha256File(archivePath);
+        ExtractPack(archivePath,unpacked,CancellationToken.None,p=>{});Directory.CreateDirectory(workspace);
+        bool rejected=false;
+        try{PreparePack(unpacked,workspace,"Synthetic "+scenario,25569,null,"");}
+        catch(InvalidDataException error){if(!error.Message.Contains("一意に判別"))throw;rejected=true;}
+        string profilePath=Path.Combine(workspace,"manager-profile.json");
+        if(expectedMode==null){
+            Require(rejected,scenario+" rejects ambiguous or missing launch targets");
+            Require(!File.Exists(profilePath),scenario+" does not publish a guessed launch profile");
+        }else{
+            Require(!rejected&&File.Exists(profilePath),scenario+" writes a launch profile");
+            var imported=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<ServerProfile>(File.ReadAllText(profilePath));
+            Require(imported.LaunchMode==expectedMode,scenario+" retains the expected launch mode");
+            string target=expectedMode=="argfile"?imported.ArgumentsFile:imported.JarFile;
+            Require(target.Replace('\\','/')==expectedTarget,scenario+" selects the exact expected relative path");
+            Require(ValidWorkspace(workspace),scenario+" remains a valid workspace");
+        }
+        Require(Sha256File(archivePath)==archiveHash,scenario+" leaves the source archive unchanged");
+    }
+    static void CheckPackLaunchSelection(string scratch)
+    {
+        const string first="libraries/net/minecraftforge/forge/1.20.1-47.2.0/win_args.txt";
+        const string second="libraries/net/minecraftforge/forge/1.20.1-47.3.0/win_args.txt";
+        CheckPackLaunchCase(scratch,"ambiguous-argfiles",new[]{first,second},null,null);
+        CheckPackLaunchCase(scratch,"reversed-argfiles",new[]{second,first},null,null);
+        CheckPackLaunchCase(scratch,"single-argfile",new[]{second},"argfile",second);
+        CheckPackLaunchCase(scratch,"unrelated-argfiles",new[]{second,"libraries/old/unix_args.txt","libraries/old/win_args.txt.bak","libraries/README.txt","run.bat"},"argfile",second);
+        CheckPackLaunchCase(scratch,"missing-argfile",new[]{"libraries/README.txt","libraries/old/unix_args.txt"},null,null);
+        CheckPackLaunchCase(scratch,"server-jar-priority",new[]{"server.jar","fabric-server-launch.jar",first,second},"jar","server.jar");
+        CheckPackLaunchCase(scratch,"fabric-jar-priority",new[]{"fabric-server-launch.jar","minecraft-server.jar",first,second},"jar","fabric-server-launch.jar");
+        CheckPackLaunchCase(scratch,"single-jar-priority",new[]{"paper-server.jar",first,second},"jar","paper-server.jar");
+    }
     static int PackCheck(string[] args)
     {
         if(args.Length!=2)return 2;string scratch=Path.GetFullPath(args[1]);Directory.CreateDirectory(scratch);try{
@@ -50,8 +88,9 @@ partial class CraftHarbor
             string valid=Path.Combine(scratch,"valid.zip");using(var archive=ZipFile.Open(valid,ZipArchiveMode.Create)){using(var writer=new StreamWriter(archive.CreateEntry("pack/server.jar").Open()))writer.Write("synthetic jar, never executed");using(var writer=new StreamWriter(archive.CreateEntry("pack/server.properties").Open()))writer.Write("server-port=12345\nserver-ip=0.0.0.0\nonline-mode=false\nenable-rcon=true\n");}
             string unpack=Path.Combine(scratch,"unpacked"),workspace=Path.Combine(scratch,"workspace");ExtractPack(valid,unpack,CancellationToken.None,p=>{});Directory.CreateDirectory(workspace);PreparePack(unpack,workspace,"Fixture",25569,null,"");string properties=File.ReadAllText(Path.Combine(workspace,"server","server.properties"));Require(properties.Contains("server-ip=127.0.0.1")&&properties.Contains("online-mode=true")&&properties.Contains("enable-rcon=false")&&properties.Contains("white-list=true"),"safe imported defaults");Require(ValidWorkspace(workspace),"nested server ZIP recognized");
             var cancel=new CancellationTokenSource();cancel.Cancel();bool cancelled=false;try{ExtractPack(valid,Path.Combine(scratch,"cancelled"),cancel.Token,p=>{});}catch(OperationCanceledException){cancelled=true;}Require(cancelled,"archive cancellation");
+            CheckPackLaunchSelection(scratch);
             string mods=Path.Combine(workspace,"server","mods"),config=Path.Combine(workspace,"server","config");Directory.CreateDirectory(mods);Directory.CreateDirectory(Path.Combine(config,"voicechat"));Directory.CreateDirectory(Path.Combine(config,"plasmovoice","server"));File.WriteAllBytes(Path.Combine(mods,"voicechat-fixture.jar"),new byte[0]);File.WriteAllBytes(Path.Combine(mods,"plasmovoice-fixture.jar"),new byte[0]);string svc=Path.Combine(config,"voicechat","voicechat-server.properties"),plasmo=Path.Combine(config,"plasmovoice","server","config.toml");File.WriteAllText(svc,"port=24460\nvoice_host=\nkeep=true\n");File.WriteAllText(plasmo,"[host]\nip=\"0.0.0.0\"\nport=0\n\n[host.public]\nip=\"old.example.invalid\"\nport=24454\nkeep=true\n");var voice=VoiceEndpoints(Path.Combine(workspace,"server"),25569);Require(voice.Count==2&&voice.Any(v=>v.Name=="Simple Voice Chat"&&v.Port==24460)&&voice.Any(v=>v.Name=="Plasmo Voice"&&v.Port==25569),"voice UDP port detection");foreach(var item in voice){Require(WriteVoiceAddress(item,"voice.example.invalid:31234"),"voice address write");Require(!WriteVoiceAddress(item,"voice.example.invalid:31234"),"idempotent voice update");Require(File.Exists(item.Config+".before-craftharbor.bak")&&File.ReadAllText(item.Config).Contains("keep=true"),"voice backup and unrelated settings preserved");}Require(!VoiceAddressValid("voice.example.invalid:65536")&&!VoiceAddressValid("voice.example.invalid")&&!VoiceAddressValid("https://voice.example.invalid:31234"),"invalid voice endpoints rejected");
-            File.WriteAllText(Path.Combine(scratch,"pack-verification.txt"),"PASS: HTTPS checks; unsafe ZIP paths/names rejected; nested server ZIP import defaults and cancellation; Simple Voice Chat/Plasmo Voice UDP detection, address validation, idempotent updates and config backup/preservation. No network requests or downloaded code was executed.");return 0;
+            File.WriteAllText(Path.Combine(scratch,"pack-verification.txt"),"PASS: HTTPS checks; unsafe ZIP paths/names rejected; nested server ZIP import defaults and cancellation; unambiguous argument-file launch selection and JAR precedence; Simple Voice Chat/Plasmo Voice UDP detection, address validation, idempotent updates and config backup/preservation. No network requests or downloaded code was executed.");return 0;
         }catch(Exception e){File.WriteAllText(Path.Combine(scratch,"pack-verification.txt"),"FAIL: "+e);return 1;}
     }
 }
