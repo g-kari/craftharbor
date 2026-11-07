@@ -13,6 +13,7 @@ partial class CraftHarbor
     }
     void CheckReviewScreens()
     {
+        CheckStoppedConsoleDrafts();
         CheckLogSearch();
         CheckLogRecordBoundaries();
         CheckParticipantSelectionRefresh();
@@ -23,7 +24,65 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+    }
+    void SubmitConsoleCommandForCheck(bool enter)
+    {
+        Require(ManagerDataOverride!=null&&!timer.Enabled,"console submission checks use a synthetic fixture with its timer stopped");
+        if(enter){
+            var key=new KeyEventArgs(Keys.Enter);
+            typeof(Control).GetMethod("OnKeyDown",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(command,new object[]{key});
+            Require(key.SuppressKeyPress,"console Enter suppresses the input key");
+        }else{
+            var send=Descendants(workspace.TabPages[1]).OfType<Button>().Single(button=>button.Text=="送信");
+            Require(send.Visible&&send.Enabled,"console send button is available on the visible console");send.PerformClick();
+        }
+    }
+    void CheckRejectedConsoleDraft(string draft,bool enter,string state)
+    {
+        command.Text=draft;command.Select(2,4);
+        int notices=queue.ToArray().Count(line=>line=="[案内] サーバー起動後に操作してください。"),echoes=queue.ToArray().Count(line=>line.StartsWith("> ",StringComparison.Ordinal));
+        int selection=command.SelectionStart,length=command.SelectionLength;
+        SubmitConsoleCommandForCheck(enter);
+        Require(command.Text==draft,state+" console submission preserves the exact unsent draft via "+(enter?"Enter":"the send button"));
+        Require(command.SelectionStart==selection&&command.SelectionLength==length,state+" rejection preserves the draft selection");
+        Require(queue.ToArray().Count(line=>line=="[案内] サーバー起動後に操作してください。") == notices+1,state+" rejection retains the existing start-server notice");
+        Require(queue.ToArray().Count(line=>line.StartsWith("> ",StringComparison.Ordinal))==echoes,state+" rejection does not report a sent command");
+    }
+    void CheckStoppedConsoleDrafts()
+    {
+        Require(ManagerDataOverride!=null&&!timer.Enabled&&!Running(server)&&!Running(tunnel),"console draft checks use a stopped synthetic fixture");
+        string savedCommand=command.Text,savedText=log.Text,savedRecent=recentLogs.Text,savedResult=logSearchResult.Text;
+        int savedCommandStart=command.SelectionStart,savedCommandLength=command.SelectionLength,savedStart=log.SelectionStart,savedLength=log.SelectionLength,savedRecentStart=recentLogs.SelectionStart,savedRecentLength=recentLogs.SelectionLength;
+        int savedPage=workspace.SelectedIndex,savedFilter=logSourceFilter.SelectedIndex;
+        var savedRecords=logRecords.ToArray();var savedQueue=queue.ToArray();
+        string preference=Path.Combine(root,"manager-log-filter.txt");byte[] savedPreference=File.Exists(preference)?File.ReadAllBytes(preference):null;
+        bool savedLarge=largeText.Checked,savedContrast=highContrast.Checked;Size savedSize=Size;
+        Control savedFocus=Descendants(this).FirstOrDefault(control=>control.Focused);
+        try{
+            largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();Size=new Size(1024,720);workspace.SelectedIndex=1;Application.DoEvents();
+            foreach(bool enter in new[]{false,true})foreach(string draft in new[]{"say Synthetic unsent draft","  /say Synthetic unsent draft  "}){
+                CheckRejectedConsoleDraft(draft,enter,"stopped");CheckRejectedConsoleDraft(draft,enter,"repeated stopped");
+            }
+            foreach(bool enter in new[]{false,true})foreach(string empty in new[]{"","   ","///"}){
+                command.Text=empty;var before=queue.ToArray();SubmitConsoleCommandForCheck(enter);
+                Require(command.Text==empty&&queue.ToArray().SequenceEqual(before),"empty console submission leaves its text and queue unchanged");
+            }
+            logRecords.Clear();logSourceFilter.SelectedIndex=0;RebuildLogView();
+            command.Text="say Synthetic unsent draft";int beforeNotice=queue.Count;SubmitConsoleCommandForCheck(false);
+            AppendLogRecords(queue.ToArray().Skip(beforeNotice));CheckCommandRow();CaptureGenericCheck(this,"ui-console-unsent.png",1);
+            largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CheckRejectedConsoleDraft("say Synthetic unsent draft",true,"enlarged high-contrast stopped");
+            CheckCommandRow();CaptureGenericCheck(this,"ui-console-unsent-accessible.png",1);
+        }finally{
+            largeText.Checked=savedLarge;highContrast.Checked=savedContrast;ApplyAccessibleTheme();Size=savedSize;
+            logRecords.Clear();logRecords.AddRange(savedRecords);logSourceFilter.SelectedIndex=savedFilter;RebuildLogView();log.Text=savedText;log.Select(savedStart,savedLength);logSearchResult.Text=savedResult;
+            recentLogs.Text=savedRecent;FitRecentLogScroll();recentLogs.Select(savedRecentStart,savedRecentLength);
+            string discarded;while(queue.TryDequeue(out discarded)){}foreach(string line in savedQueue)queue.Enqueue(line);
+            if(savedPreference==null)File.Delete(preference);else File.WriteAllBytes(preference,savedPreference);
+            command.Text=savedCommand;command.Select(savedCommandStart,savedCommandLength);workspace.SelectedIndex=savedPage;
+            if(savedFocus!=null&&savedFocus.CanFocus)savedFocus.Focus();Application.DoEvents();
+        }
+        Require(command.Text==savedCommand&&log.Text==savedText&&logRecords.SequenceEqual(savedRecords)&&queue.ToArray().SequenceEqual(savedQueue),"console draft checks restore input and log fixtures");
     }
     string LogSearchState(){return " selection="+log.SelectionStart+":"+log.SelectionLength+" selected="+log.SelectedText+" inputFocused="+searchText.Focused+" inputCanFocus="+searchText.CanFocus+" inputVisible="+searchText.Visible+" inputEnabled="+searchText.Enabled+" inputHandle="+searchText.IsHandleCreated+" inputDisposed="+searchText.IsDisposed+" parentVisible="+searchText.Parent.Visible+" parentEnabled="+searchText.Parent.Enabled+" parentHandle="+searchText.Parent.IsHandleCreated+" logFocused="+log.Focused+" active="+(ActiveControl==null?"null":ActiveControl.GetType().Name);}
     void CheckLogSearchLayout()
