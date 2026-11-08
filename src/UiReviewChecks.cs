@@ -25,7 +25,7 @@ partial class CraftHarbor
         Size=new Size(1360,960);workspace.SelectedIndex=3;Application.DoEvents();var settings=(FlowLayoutPanel)workspace.TabPages[3].Controls[0];settings.ScrollControlIntoView(autoDistances.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-distance-settings.png",3);
         settings.ScrollControlIntoView(autoJava.Parent);Application.DoEvents();CaptureGenericCheck(this,"ui-java-settings.png",3);
         Size=new Size(1024,720);largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();CaptureGenericCheck(this,"ui-console-accessible-1024.png",1);CheckCommandRow();Size=new Size(1360,960);
-        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant-guide copy and TXT save use the visible buttons, preserve current text and UTF-8 BOM, show the actual save path, clear stale results on changed or explicit refresh, recover on explicit retry, and retain readable enlarged high-contrast feedback; locked-file save/refresh failure states are checked through the same production actions directly, not through the modal dialog; stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and wraps only on the console, and other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
+        File.WriteAllText(Path.Combine(root,"ui-review-verification.txt"),"PASS: participant-guide copy and TXT save use the visible buttons, preserve current text and UTF-8 BOM, show the actual save path, clear stale results on changed or explicit refresh, recover on explicit retry, and retain readable enlarged high-contrast feedback; locked-file save/refresh failure states are checked through the same production actions directly, not through the modal dialog; stopped console submissions preserve the exact unsent draft through the send button and Enter, including repeated attempts and empty input; console log search preserves selection for empty and missing queries, reports next match and wraparound, searches only visible sources, supports Enter, and clears stale feedback; Ctrl+F bubbles from command and settings inputs to focus and select the query without changing logs or the unsent command, F3 advances and Shift+F3 searches backward, both wrap only on the console; reverse search covers current-selection exclusion, end and zero carets, a prefix shorter than the query, literal punctuation, successful filtered reflow, empty queries/logs, adjacent and single matches, repeated direction changes, caret-inside boundaries, source-filter and search-button key bubbling, unchanged unsent drafts and enlarged high-contrast feedback; other modifiers remain untouched; participant selection survives automatic/manual list refresh, inserted and reordered names, and case-only identity changes; removed or unselected participants do not select another person; log record boundaries after source filtering, empty results, 4000-record rollover and 500000-character trimming; 12pt UI text baseline; console command row remains inside its layout at 1024x720 in normal and enlarged/high-contrast modes; 600-sample chart rollover and sample-gap rendering; CPU/memory/server/player distance policy, next-start settings persistence, active-port write protection, backup preservation. Screenshots are synthetic WinForms DrawToBitmap captures; native screen readers and Windows DPI scaling are not verified.");
     }
     void CheckParticipantGuideFeedback()
     {
@@ -211,6 +211,7 @@ partial class CraftHarbor
             Require(logSearchResult.Visible&&logSearchResult.Height>=logSearchResult.Font.Height&&logSearchResult.ForeColor==Color.White,"search feedback remains visible with enlarged high-contrast text");
             CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-search-accessible.png",1);
             CheckLogSearchShortcuts();
+            CheckPreviousLogSearch();
         }finally{
             largeText.Checked=savedLarge;highContrast.Checked=savedContrast;ApplyAccessibleTheme();Size=savedSize;
             logRecords.Clear();logRecords.AddRange(savedRecords);logSourceFilter.SelectedIndex=savedFilter;RebuildLogView();
@@ -246,7 +247,7 @@ partial class CraftHarbor
         Require(log.SelectionStart==second&&log.SelectedText=="alpha"&&log.Focused,"F3 advances from the existing log selection");
         Require(InvokeLogSearchShortcut(log,Keys.F3),"F3 from the readonly log is handled");Application.DoEvents();
         Require(log.SelectionStart==5&&log.SelectedText=="Alpha"&&logSearchResult.Text=="先頭に戻り、一致する箇所を選択しました。","F3 wraps through the same search path");
-        foreach(var keys in new[]{Keys.Control|Keys.F3,Keys.Shift|Keys.F3,Keys.Alt|Keys.F,Keys.Control|Keys.Shift|Keys.F}){
+        foreach(var keys in new[]{Keys.Control|Keys.F3,Keys.Control|Keys.Shift|Keys.F3,Keys.Alt|Keys.F3,Keys.Alt|Keys.F,Keys.Control|Keys.Shift|Keys.F}){
             InvokeLogSearchShortcut(log,keys);Application.DoEvents();
             Require(workspace.SelectedIndex==1&&log.SelectionStart==5&&log.SelectedText=="Alpha"&&command.Text=="say Synthetic unsent draft","other shortcut modifiers do not search or change the command");
         }
@@ -264,6 +265,76 @@ partial class CraftHarbor
         Require(InvokeLogSearchShortcut(command,Keys.Control|Keys.F),"Ctrl+F remains available with enlarged high-contrast text");Application.DoEvents();
         Require(searchText.Focused&&searchText.ForeColor==Color.White,"shortcut search retains accessible focus and contrast");
         CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-shortcut-accessible.png",1);
+    }
+    void CheckPreviousLogSearch()
+    {
+        largeText.Checked=false;highContrast.Checked=false;ApplyAccessibleTheme();
+        workspace.SelectedIndex=1;logRecords.Clear();logSourceFilter.SelectedIndex=0;RebuildLogView();
+        AppendLogRecords(new[]{"[MC] Alpha first","[公開] Synthetic hidden tunnel","[MC] alpha last"});
+        string text=log.Text;var records=logRecords.ToArray();string draft="say Synthetic reverse-search draft";command.Text=draft;
+        int first=text.IndexOf("Alpha",StringComparison.Ordinal),last=text.IndexOf("alpha last",StringComparison.Ordinal);
+        searchText.Text="alpha";log.Select(last,5);command.Focus();Application.DoEvents();
+        Require(InvokeLogSearchShortcut(command,Keys.Shift|Keys.F3),"Shift+F3 from command input is handled on the console");Application.DoEvents();
+        Require(log.SelectionStart==first&&log.SelectedText=="Alpha"&&log.Focused&&logSearchResult.Text=="一致する箇所を選択しました。","previous search excludes the current match and ignores case");
+        Require(InvokeLogSearchShortcut(log,Keys.Shift|Keys.F3),"Shift+F3 from the readonly log is handled");Application.DoEvents();
+        Require(log.SelectionStart==last&&log.SelectedText=="alpha"&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。","previous search wraps from the first match to the last and explains it");
+        CaptureGenericCheck(this,"ui-log-search-previous-wrapped.png",1);
+        Require(InvokeLogSearchShortcut(log,Keys.F3),"forward search still works after a previous search");Application.DoEvents();
+        Require(log.SelectionStart==first&&logSearchResult.Text=="先頭に戻り、一致する箇所を選択しました。","changing direction returns to the first match through the existing forward path");
+
+        log.Select(log.TextLength,0);Require(InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3),"previous search accepts an end-of-log caret");Application.DoEvents();
+        Require(log.SelectionStart==last&&logSearchResult.Text=="一致する箇所を選択しました。","end-of-log caret searches backward without wrapping");
+        log.Select(0,0);InvokeLogSearchShortcut(log,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectionStart==last&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。","zero caret wraps without a negative search index");
+        searchText.Text="alpha last";log.Select(1,0);InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectionStart==last&&log.SelectedText=="alpha last"&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。","query longer than the prefix wraps to the complete last match");
+        Require(log.Text==text&&logRecords.SequenceEqual(records)&&command.Text==draft&&logSourceFilter.SelectedIndex==0,"reverse shortcuts preserve logs, source filter and unsent commands");
+
+        searchText.Text="alpha";log.Select(first,5);workspace.SelectedIndex=3;motdSetting.Focus();Application.DoEvents();
+        InvokeLogSearchShortcut(motdSetting,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(workspace.SelectedIndex==3&&log.SelectionStart==first&&searchText.Text=="alpha","Shift+F3 on another page does not navigate or search");
+        workspace.SelectedIndex=1;logSourceFilter.SelectedIndex=1;Application.DoEvents();
+        Require(log.SelectionStart==log.TextLength&&log.SelectionLength==0&&logSearchResult.Text=="","changing the source filter rebuilds the log with a clean end caret");
+        searchText.Text="alpha";logSourceFilter.Focus();Application.DoEvents();
+        Require(InvokeLogSearchShortcut(logSourceFilter,Keys.Shift|Keys.F3),"Shift+F3 bubbles from the source filter");Application.DoEvents();
+        Require(log.SelectionStart==log.Text.IndexOf("alpha last",StringComparison.Ordinal)&&log.SelectedText=="alpha"&&logSearchResult.Text=="一致する箇所を選択しました。","reverse search after filtering finds the last visible match from the rebuilt end caret");
+        var searchButton=Descendants(workspace.TabPages[1]).OfType<Button>().Single(button=>button.Text=="ログ内を検索");searchButton.Focus();Application.DoEvents();
+        Require(InvokeLogSearchShortcut(searchButton,Keys.Shift|Keys.F3),"Shift+F3 bubbles from the search button");Application.DoEvents();
+        Require(log.SelectionStart==first&&log.SelectedText=="Alpha"&&logSearchResult.Text=="一致する箇所を選択しました。","reverse search steps to the previous visible match after source reflow");
+        Require(logRecords.SequenceEqual(records)&&command.Text==draft&&logSourceFilter.SelectedIndex==1&&!log.Text.Contains("tunnel"),"filtered reverse search preserves records, filter and unsent draft");
+        log.Select(first,5);searchText.Text="tunnel";
+        Require(InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3),"previous search handles a hidden-source query");Application.DoEvents();
+        Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="表示中のログに見つかりません。","previous search respects source filters without losing selection");
+        searchText.Text="";InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectedText=="Alpha"&&searchText.Focused&&logSearchResult.Text=="検索語を入力してください。","previous search explains an empty query and preserves selection");
+        searchText.Text="[MC]";log.Select(log.TextLength,0);InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectedText=="[MC]"&&log.SelectionStart==log.Text.LastIndexOf("[MC]",StringComparison.Ordinal),"previous search treats punctuation as literal text");
+        logRecords.Clear();RebuildLogView();searchText.Text="alpha";InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.Text==""&&log.SelectionStart==0&&searchText.Focused&&logSearchResult.Text=="表示中のログに見つかりません。","previous search on an empty log reports no match without an invalid index");
+
+        logSourceFilter.SelectedIndex=0;AppendLogRecords(new[]{"Alphaalpha"});searchText.Text="alpha";log.Select(5,5);
+        for(int repeat=0;repeat<3;repeat++){
+            InvokeLogSearchShortcut(log,Keys.Shift|Keys.F3);Application.DoEvents();
+            Require(log.SelectionStart==0&&log.SelectedText=="Alpha"&&logSearchResult.Text=="一致する箇所を選択しました。","previous search includes the adjacent complete match at index zero");
+            InvokeLogSearchShortcut(log,Keys.F3);Application.DoEvents();
+            Require(log.SelectionStart==5&&log.SelectedText=="alpha"&&logSearchResult.Text=="一致する箇所を選択しました。","repeated direction changes retain adjacent matches without skipping");
+        }
+        log.Select(2,0);InvokeLogSearchShortcut(log,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectionStart==5&&log.SelectedText=="alpha"&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。","a caret inside a match excludes the incomplete prefix and wraps");
+        logRecords.Clear();RebuildLogView();AppendLogRecords(new[]{"Alpha"});log.Select(0,5);
+        for(int repeat=0;repeat<2;repeat++){
+            InvokeLogSearchShortcut(log,Keys.Shift|Keys.F3);Application.DoEvents();
+            Require(log.SelectionStart==0&&log.SelectedText=="Alpha"&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。","a single match wraps backward to itself repeatedly");
+            InvokeLogSearchShortcut(log,Keys.F3);Application.DoEvents();
+            Require(log.SelectionStart==0&&log.SelectedText=="Alpha"&&logSearchResult.Text=="先頭に戻り、一致する箇所を選択しました。","a single match still wraps forward to itself");
+        }
+        Require(command.Text==draft&&logSourceFilter.SelectedIndex==0,"boundary searches preserve the unsent draft and filter");
+        logRecords.Clear();RebuildLogView();
+
+        logSourceFilter.SelectedIndex=0;AppendLogRecords(new[]{"[MC] Alpha first","[MC] alpha last"});searchText.Text="alpha";log.Select(first,5);
+        largeText.Checked=true;highContrast.Checked=true;ApplyAccessibleTheme();InvokeLogSearchShortcut(searchText,Keys.Shift|Keys.F3);Application.DoEvents();
+        Require(log.SelectedText=="alpha"&&logSearchResult.Text=="末尾に戻り、一致する箇所を選択しました。"&&logSearchResult.ForeColor==Color.White,"previous-search wrap feedback retains enlarged high contrast");
+        CheckLogSearchLayout();CaptureGenericCheck(this,"ui-log-search-previous-accessible.png",1);
     }
     void RequireParticipantSelection(string name,int column,string context)
     {
