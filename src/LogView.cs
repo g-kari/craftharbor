@@ -16,19 +16,24 @@ partial class CraftHarbor
         if(workspace!=null&&searchText!=null&&workspace.TabPages.Count>1){
             if(keyData==(Keys.Control|Keys.F)){workspace.SelectedIndex=1;searchText.Focus();searchText.SelectAll();return true;}
             if(keyData==Keys.F3&&workspace.SelectedIndex==1){FindNextLogMatch();return true;}
+            if(keyData==(Keys.Shift|Keys.F3)&&workspace.SelectedIndex==1){FindLogMatch(true);return true;}
         }
         return base.ProcessCmdKey(ref message,keyData);
     }
     void ClearLogSearchResult(){if(logSearchResult!=null)logSearchResult.Text="";}
     void FindNextLogMatch()
     {
+        FindLogMatch(false);
+    }
+    void FindLogMatch(bool previous)
+    {
         string query=searchText.Text;
         if(query.Length==0){logSearchResult.Text="検索語を入力してください。";searchText.Focus();return;}
-        int pos=log.Text.IndexOf(query,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);bool wrapped=pos<0;
-        if(wrapped)pos=log.Text.IndexOf(query,StringComparison.OrdinalIgnoreCase);
+        int pos=previous?(log.SelectionStart>0?log.Text.LastIndexOf(query,log.SelectionStart-1,StringComparison.OrdinalIgnoreCase):-1):log.Text.IndexOf(query,log.SelectionStart+log.SelectionLength,StringComparison.OrdinalIgnoreCase);bool wrapped=pos<0;
+        if(wrapped)pos=previous?log.Text.LastIndexOf(query,StringComparison.OrdinalIgnoreCase):log.Text.IndexOf(query,StringComparison.OrdinalIgnoreCase);
         if(pos<0){logSearchResult.Text="表示中のログに見つかりません。";searchText.Focus();return;}
         log.Select(pos,query.Length);log.ScrollToCaret();log.Focus();
-        logSearchResult.Text=wrapped?"先頭に戻り、一致する箇所を選択しました。":"一致する箇所を選択しました。";
+        logSearchResult.Text=wrapped?(previous?"末尾に戻り、一致する箇所を選択しました。":"先頭に戻り、一致する箇所を選択しました。"):"一致する箇所を選択しました。";
     }
     static int LogChannel(string line){if(line.StartsWith("[MC]",StringComparison.Ordinal)||line.StartsWith("> ",StringComparison.Ordinal))return 1;if(line.StartsWith("[playit]",StringComparison.OrdinalIgnoreCase)||line.StartsWith("[ngrok]",StringComparison.OrdinalIgnoreCase)||line.StartsWith("[公開",StringComparison.Ordinal)||line.StartsWith("[音声]",StringComparison.Ordinal)||line.StartsWith("[playit設定]",StringComparison.Ordinal))return 2;return 3;}
     bool LogVisible(string line){return logSourceFilter==null||logSourceFilter.SelectedIndex<=0||LogChannel(line)==logSourceFilter.SelectedIndex;}

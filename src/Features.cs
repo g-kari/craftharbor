@@ -71,9 +71,9 @@ partial class CraftHarbor
         var consolePage=Page(tabs,"コンソール");
         var consoleWrap=new TableLayoutPanel { Dock=DockStyle.Fill,RowCount=2,ColumnCount=1 };consoleWrap.RowStyles.Add(new RowStyle(SizeType.Absolute,172));consoleWrap.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         var consoleTools=new FlowLayoutPanel { Dock=DockStyle.Fill,WrapContents=true };searchText=Input(consoleTools,230);
-        searchText.AccessibleName="ログの検索語";searchText.AccessibleDescription="Ctrl+Fでこの欄へ移動して全選択。Enterまたはコンソール内のF3で次の一致を検索します。";
-        tips.SetToolTip(searchText,"Ctrl+F: 検索語を全選択 / Enter・F3: 次を検索");
-        var searchButton=FlowBtn(consoleTools,"ログ内を検索",delegate { FindNextLogMatch(); });tips.SetToolTip(searchButton,"表示中のログから次の一致を検索します。コンソール内ではF3でも検索できます。");
+        searchText.AccessibleName="ログの検索語";searchText.AccessibleDescription="Ctrl+Fでこの欄へ移動して全選択。Enterまたはコンソール内のF3で次の一致、Shift+F3で前の一致を検索します。";
+        tips.SetToolTip(searchText,"Ctrl+F: 検索語を全選択 / Enter・F3: 次を検索 / Shift+F3: 前を検索");
+        var searchButton=FlowBtn(consoleTools,"ログ内を検索",delegate { FindNextLogMatch(); });tips.SetToolTip(searchButton,"表示中のログから次の一致を検索します。コンソール内ではF3で次、Shift+F3で前の一致を検索できます。");
         searchText.KeyDown+=delegate(object sender,KeyEventArgs e){if(e.KeyCode==Keys.Enter){e.Handled=true;e.SuppressKeyPress=true;FindNextLogMatch();}};
         searchText.TextChanged+=delegate{ClearLogSearchResult();};log.TextChanged+=delegate{ClearLogSearchResult();};
         FlowBtn(consoleTools,"ログを保存",delegate { ExportLog(); });FlowBtn(consoleTools,"ログフォルダー",delegate { Open(Path.Combine(ServerDir,"logs")); });
